@@ -1,0 +1,93 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# ORAZAKA IDENTITY SERVICE — infrastructure wiring only (env-driven)
+# Shares orazaka_db until the Phase 2f database split (IDENTITY_DB_URL flips to
+# the dedicated orazaka_identity_db with its own role).
+# ══════════════════════════════════════════════════════════════════════════════
+spring:
+  application:
+    name: orazaka-identity-service
+  threads:
+    virtual:
+      enabled: true
+
+  # NO spring.datasource here: the connection is built by DataSourceConfig from the
+  # orazaka.identity-service.datasource block below, so the shared .env's
+  # SPRING_DATASOURCE_* (app database) can never hijack this service's pool.
+  sql:
+    init:
+      mode: never          # DDL/seed come from infra/initdb, not Spring
+  flyway:
+    enabled: false
+  jpa:
+    open-in-view: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+          github:
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:${SPRING_RABBITMQ_HOST:localhost}}
+    port: ${RABBITMQ_PORT:${SPRING_RABBITMQ_PORT:5672}}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    template:
+      observation-enabled: true
+
+server:
+  port: ${IDENTITY_PORT:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+  otlp:
+    tracing:
+      endpoint: ${OTEL_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+
+logging:
+  file:
+    name: ${IDENTITY_LOG:var/logs/identity-service.log}
+  logback:
+    rollingpolicy:
+      max-file-size: 1MB
+      total-size-cap: 10MB
+      max-history: 7
+
+# ── orazaka-identity (the hosted bounded context) ─────────────────────────────
+orazaka:
+  identity-service:
+    datasource:
+      url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/orazaka_identity_db}
+      username: ${IDENTITY_DB_USERNAME:orazaka_identity}
+      password: ${IDENTITY_DB_PASSWORD}
+  identity:
+    # Session JWT signing — the same shared HS256 secret every host validates with.
+    jwt:
+      secret: ${IDENTITY_JWT_SECRET:orazaka-local-dev-identity-jwt-secret-256bit!}
+      issuer: ${IDENTITY_JWT_ISSUER:orazaka-identity}
+      ttl: ${IDENTITY_JWT_TTL:PT12H}
+    # AES-256 JPA field encryption (orazaka-identity crypto adapter).
+    crypto:
+      key: ${CRYPTO_KEY:}
+      salt: ${CRYPTO_SALT:}
+    email-verification:
+      enabled: ${EMAIL_VERIFICATION_ENABLED:true}
+    interceptions:
+      enabled: ${INTERCEPTIONS_ENABLED:true}
+      schemas:
+        onboarding: "classpath:config/onboarding-schema.json"
+        feedback: "classpath:config/feedback-schema.json"
