@@ -1,0 +1,104 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# ORAZAKA IDENTITY SERVICE — infrastructure wiring only (env-driven)
+# Shares orazaka_db until the Phase 2f database split (IDENTITY_DB_URL flips to
+# the dedicated krizaka_users_db with its own role).
+# ══════════════════════════════════════════════════════════════════════════════
+spring:
+  application:
+    name: krizaka-users-service
+  threads:
+    virtual:
+      enabled: true
+
+  # NO spring.datasource here: the connection is built by DataSourceConfig from the
+  # krizaka.users-service.datasource block below, so the shared .env's
+  # SPRING_DATASOURCE_* (app database) can never hijack this service's pool.
+  sql:
+    init:
+      mode: never          # DDL/seed come from infra/initdb, not Spring
+  flyway:
+    enabled: false
+  jpa:
+    open-in-view: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+          github:
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:${SPRING_RABBITMQ_HOST:localhost}}
+    port: ${RABBITMQ_PORT:${SPRING_RABBITMQ_PORT:5672}}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    template:
+      observation-enabled: true
+
+server:
+  port: ${IDENTITY_PORT:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+  otlp:
+    tracing:
+      endpoint: ${OTEL_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+
+logging:
+  file:
+    name: ${IDENTITY_LOG:var/logs/identity-service.log}
+  logback:
+    rollingpolicy:
+      max-file-size: 1MB
+      total-size-cap: 10MB
+      max-history: 7
+
+krizaka:
+  messaging:
+    exchanges:
+      # The bus this service runs on belongs to the platform that hosts it: set EVENTS_EXCHANGE and
+      # DLX_EXCHANGE to join an existing one; standalone it creates and uses its own.
+      events: ${EVENTS_EXCHANGE:krizaka.events}
+      dead-letter: ${DLX_EXCHANGE:krizaka.dlx}
+  users:
+    # Session JWT signing — the same shared HS256 secret every host validates with.
+    jwt:
+      secret: ${IDENTITY_JWT_SECRET:orazaka-local-dev-identity-jwt-secret-256bit!}
+      issuer: ${IDENTITY_JWT_ISSUER:krizaka-users}
+      ttl: ${IDENTITY_JWT_TTL:PT12H}
+    # AES-256 JPA field encryption (krizaka-users-core crypto adapter).
+    crypto:
+      key: ${CRYPTO_KEY:}
+      salt: ${CRYPTO_SALT:}
+    email-verification:
+      enabled: ${EMAIL_VERIFICATION_ENABLED:true}
+    interceptions:
+      enabled: ${INTERCEPTIONS_ENABLED:true}
+      # The forms are the application's: point these at its own schemas (file:… or classpath:…);
+      # the defaults ask only for a theme, a language and a display name.
+      schemas:
+        onboarding: ${USERS_ONBOARDING_SCHEMA:classpath:config/onboarding-schema.json}
+        feedback: ${USERS_FEEDBACK_SCHEMA:classpath:config/feedback-schema.json}
+    preferences:
+      # Preference-key prefixes the hosting application reads as its own configuration: a user may
+      # not store a preference under them (comma-separated, e.g. "app.,billing.").
+      reserved-prefixes: ${USERS_RESERVED_PREFERENCE_PREFIXES:}
+  users-service:
+    datasource:
+      url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/krizaka_users_db}
+      username: ${IDENTITY_DB_USERNAME:krizaka_users}
+      password: ${IDENTITY_DB_PASSWORD}

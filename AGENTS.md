@@ -1,21 +1,28 @@
-# orazaka-users — Governance scope (agent-neutral)
+# krizaka-users — Scope (agent-neutral)
 
-> This repository is one component of the **Orazaka platform**. The normative contract is
-> [`AGENTS.md`](https://github.com/krizaka/orazaka/blob/main/AGENTS.md) at the root of the Orazaka workspace
-> ([`krizaka/orazaka`](https://github.com/krizaka/orazaka)), together with its `.agent/rules/*`. When this repository
-> is cloned inside the workspace (`orazaka-apps/services/orazaka-users`), that contract is loaded first and applies
-> without exception. **No rule lives here** — this file only scopes it.
+> A Krizaka building block: user management for any application, published on Maven Central as
+> `com.krizaka:krizaka-users-*`. Orazaka is its first consumer, not its owner. When this repository is cloned inside
+> the Orazaka workspace (`krizaka/krizaka-users`), the workspace contract
+> ([`krizaka/orazaka/AGENTS.md`](https://github.com/krizaka/orazaka/blob/main/AGENTS.md)) applies as well, and its
+> cross-repository rules scan this repository.
 
-## Scope of this repository
+## Rules of this repository
 
-- **Role:** Reusable user management for any Krizaka application: registration, e-mail verification, login (password + Google/GitHub OAuth), forgot/reset password, profile & preferences, API keys, RBAC and JWT issuance.
-- **Layer:** Domain service — reusable by any Krizaka application
-- **Depends on:** orazaka-build — never on another repository's Tier-3 implementation (AGENTS.md §2, [SEAM-002]).
-- **Workspace path:** `orazaka-apps/services/orazaka-users`
+- **Depends on Krizaka artifacts only** — `krizaka-build`, `krizaka-platform-kit`. Never on a product
+  (`com.orazaka..`, `com.orochia..`): `UsersDependsOnNoProduct` fails the build.
+- **Other services depend on the contract or the client** (`krizaka-users-api`, `krizaka-users-client`), never on
+  `krizaka-users-core` or `-persistence`.
+- **Hexagonal layout**: `domain` is framework-free; ports in `domain/ports`; adapters package-private in
+  `infrastructure/adapter/<rest|amqp|persistence|federation|crypto>`; one top-level class per file
+  (`krizaka-test-support` `CodeRules`, run by the `*GovernanceTest` suites).
+- **Security** comes from `krizaka-security`: the filter chain starts with `SecurityBaseline.apply`; the internal surface
+  requires `SERVICE`.
+- **Configuration** lives under `krizaka.users.*` and `krizaka.users-service.*`, typed by `@ConfigurationProperties`
+  records that validate themselves.
+- **Owns its schema**: `infra/initdb/10-identity.sql`, read by the integration tests through `InitDb.locate`.
 
 ## Definition of done
 
-1. `./mvnw verify` is green (unit + Testcontainers ITs + this repository's `*GovernanceTest`).
-2. Inside the workspace, the cross-repository rules are green as well
-   (`./mvnw -f orazaka-apps/services/orazaka-users/pom.xml verify` from the workspace root).
-3. Spotless (google-java-format) passes — it is bound to `validate`.
+1. `./mvnw verify -Prelease -Dgpg.skip` is green (unit, Testcontainers integration tests, governance, javadoc).
+2. Inside the Orazaka workspace, `./mvnw install` from the root is green — every consumer still builds.
+3. [README.md](README.md) and [CHANGELOG.md](CHANGELOG.md) describe the change.
