@@ -99,16 +99,16 @@ class InvoiceService {
 | `krizaka.users.jwt.ttl` | `IDENTITY_JWT_TTL` | `PT12H` |
 | `krizaka.users.crypto.key` / `.salt` | `CRYPTO_KEY` / `CRYPTO_SALT` | — (provider-key encryption) |
 | `krizaka.users.email-verification.enabled` | `EMAIL_VERIFICATION_ENABLED` | `true` |
-| `krizaka.users-service.datasource.url` | `IDENTITY_DB_URL` | `jdbc:postgresql://localhost:5432/orazaka_identity_db` |
-| `krizaka.users-service.datasource.username` / `.password` | `IDENTITY_DB_USERNAME` / `IDENTITY_DB_PASSWORD` | `orazaka_identity` / — |
+| `krizaka.users-service.datasource.url` | `IDENTITY_DB_URL` | `jdbc:postgresql://localhost:5432/krizaka_users_db` |
+| `krizaka.users-service.datasource.username` / `.password` | `IDENTITY_DB_USERNAME` / `IDENTITY_DB_PASSWORD` | `krizaka_users` / — |
 | `server.port` | `IDENTITY_PORT` | `8083` |
 
 PostgreSQL and RabbitMQ are required. The database, its role (created **without** a password — set it at deployment)
 and the schema come from [`infra/initdb/10-identity.sql`](infra/initdb/10-identity.sql).
 
-> **Wire names.** The database (`orazaka_identity_db`), its tables and the events exchange (`orazaka.events`) keep the
-> names of the platform this service was extracted from, so existing deployments keep their data and their consumers.
-> They are deployment settings, not code: renaming them is a data migration, planned separately.
+> **Messaging.** Events are published to the events exchange of the platform the service runs on:
+> `krizaka.messaging.exchanges.events` (`EVENTS_EXCHANGE`, default `krizaka.events`) and
+> `krizaka.messaging.exchanges.dead-letter` (`DLX_EXCHANGE`, default `krizaka.dlx`).
 
 ## Build
 

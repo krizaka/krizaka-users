@@ -18,12 +18,12 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * JPA Entity mapping the {@code orazaka_users} database table.
+ * JPA Entity mapping the {@code users} database table.
  *
  * <p>Persists core user profile attributes, credentials, and preferences.
  */
 @Entity
-@Table(name = "orazaka_users")
+@Table(name = "users")
 public class UserEntity {
 
   @Id

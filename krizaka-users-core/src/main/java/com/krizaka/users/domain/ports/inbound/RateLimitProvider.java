@@ -16,7 +16,7 @@ public interface RateLimitProvider {
 
   /**
    * Resolves the tier key flagged as the system default in the database. The default tier selection
-   * is data, not configuration — it lives in the {@code orazaka_rate_limits} table, not in yaml.
+   * is data, not configuration — it lives in the {@code rate_limits} table, not in yaml.
    *
    * @return the default tier key, or empty if none is flagged.
    */

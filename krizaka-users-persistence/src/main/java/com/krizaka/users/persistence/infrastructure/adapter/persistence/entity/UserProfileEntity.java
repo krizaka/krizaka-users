@@ -10,9 +10,9 @@ import java.util.Map;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** JPA Entity mapping the {@code orazaka_user_profiles} database table. */
+/** JPA Entity mapping the {@code user_profiles} database table. */
 @Entity
-@Table(name = "orazaka_user_profiles")
+@Table(name = "user_profiles")
 public class UserProfileEntity {
 
   @Id

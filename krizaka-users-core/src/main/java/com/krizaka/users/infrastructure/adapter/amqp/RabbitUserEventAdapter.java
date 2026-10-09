@@ -1,5 +1,6 @@
 package com.krizaka.users.infrastructure.adapter.amqp;
 
+import com.krizaka.messaging.topology.MessagingExchanges;
 import com.krizaka.users.domain.model.UserRegisteredEvent;
 import com.krizaka.users.domain.ports.outbound.UserEventPublisher;
 import com.krizaka.users.persistence.domain.model.OutboxMessage;
@@ -11,24 +12,27 @@ import org.springframework.stereotype.Component;
 
 /**
  * AMQP adapter for publishing user registration events downstream (AGENTS.md §6: {@code
- * evt.user.registered} on {@code orazaka.events}). Lives in the identity module — the publisher of
- * an identity domain event belongs to the identity context, not to persistence-app.
+ * evt.user.registered} on the platform's events exchange ({@code
+ * krizaka.messaging.exchanges.events})). Lives in the identity module — the publisher of an
+ * identity domain event belongs to the identity context, not to persistence-app.
  *
- * <p>Duplicates the exchange/key it publishes (no shared messaging jar across the future service
- * boundary); the AMQP contract tests keep the copy honest. Published through the identity outbox
- * (at-least-once + messageId dedup).
+ * <p>The routing key is this context's contract; the exchange belongs to the platform the service
+ * runs on (krizaka-messaging's {@code MessagingExchanges}). Published through the users outbox
+ * (at-least-once, deduplicated downstream by {@code messageId}).
  */
 @Component
 class RabbitUserEventAdapter implements UserEventPublisher {
 
   private static final Logger logger = LoggerFactory.getLogger(RabbitUserEventAdapter.class);
-  private static final String EVENTS_EXCHANGE = "orazaka.events";
   private static final String EVT_USER_REGISTERED = "evt.user.registered";
 
   private final OutboxStore outboxStore;
+  private final String eventsExchange;
 
-  RabbitUserEventAdapter(OutboxStore outboxStore) {
+  RabbitUserEventAdapter(OutboxStore outboxStore, MessagingExchanges exchanges) {
     this.outboxStore = Objects.requireNonNull(outboxStore, "OutboxStore cannot be null");
+    this.eventsExchange =
+        Objects.requireNonNull(exchanges, "MessagingExchanges cannot be null").events();
   }
 
   @Override
@@ -38,6 +42,6 @@ class RabbitUserEventAdapter implements UserEventPublisher {
         "Publishing evt.user.registered event downstream for user: {}", event.user().email());
     outboxStore.append(
         new OutboxMessage(
-            "user", event.user().id().toString(), EVENTS_EXCHANGE, EVT_USER_REGISTERED, event));
+            "user", event.user().id().toString(), eventsExchange, EVT_USER_REGISTERED, event));
   }
 }

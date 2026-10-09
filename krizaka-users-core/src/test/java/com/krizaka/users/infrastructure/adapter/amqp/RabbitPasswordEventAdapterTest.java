@@ -3,6 +3,7 @@ package com.krizaka.users.infrastructure.adapter.amqp;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
+import com.krizaka.messaging.topology.MessagingExchanges;
 import com.krizaka.users.domain.model.PasswordResetRequestedEvent;
 import com.krizaka.users.persistence.domain.model.OutboxMessage;
 import com.krizaka.users.persistence.domain.ports.OutboxStore;
@@ -21,7 +22,9 @@ class RabbitPasswordEventAdapterTest {
 
   @BeforeEach
   void setUp() {
-    adapter = new RabbitPasswordEventAdapter(outboxStore);
+    adapter =
+        new RabbitPasswordEventAdapter(
+            outboxStore, new MessagingExchanges("platform.events", "platform.dlx"));
   }
 
   @Test
@@ -34,7 +37,7 @@ class RabbitPasswordEventAdapterTest {
     verify(outboxStore)
         .append(
             new OutboxMessage(
-                "password", "test@orazaka.com", "orazaka.events", "evt.password.reset", event));
+                "password", "test@orazaka.com", "platform.events", "evt.password.reset", event));
   }
 
   @Test

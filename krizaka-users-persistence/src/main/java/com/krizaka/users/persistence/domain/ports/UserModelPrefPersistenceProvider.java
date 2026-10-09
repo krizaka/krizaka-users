@@ -6,8 +6,8 @@ import java.util.Optional;
 
 /**
  * Inbound port for reading and writing a user's per-category default model preferences ({@code
- * orazaka_user_model_prefs}). A {@code save} is an upsert on the composite {@code (userId,
- * category)} key — so a user can change their default freely.
+ * user_model_prefs}). A {@code save} is an upsert on the composite {@code (userId, category)} key —
+ * so a user can change their default freely.
  */
 public interface UserModelPrefPersistenceProvider {
 

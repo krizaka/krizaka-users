@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 
 /** JPA Entity mapping the rate limits configuration table inside the identity domain. */
 @Entity
-@Table(name = "orazaka_rate_limits")
+@Table(name = "rate_limits")
 public class RateLimitEntity {
 
   @Id

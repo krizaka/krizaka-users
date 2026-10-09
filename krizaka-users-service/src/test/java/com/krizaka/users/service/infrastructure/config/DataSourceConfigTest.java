@@ -13,12 +13,12 @@ class DataSourceConfigTest {
   void poolBuiltFromIdentityProperties() {
     var properties =
         new IdentityDataSourceProperties(
-            "jdbc:postgresql://localhost:5432/orazaka_identity_db", "orazaka_identity", "secret");
+            "jdbc:postgresql://localhost:5432/krizaka_users_db", "krizaka_users", "secret");
 
     try (HikariDataSource dataSource =
         (HikariDataSource) new DataSourceConfig().identityDataSource(properties)) {
       assertThat(dataSource.getJdbcUrl()).isEqualTo(properties.url());
-      assertThat(dataSource.getUsername()).isEqualTo("orazaka_identity");
+      assertThat(dataSource.getUsername()).isEqualTo("krizaka_users");
       assertThat(dataSource.getMaximumPoolSize()).isEqualTo(5);
     }
   }

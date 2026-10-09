@@ -7,13 +7,13 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * JPA Entity mapping the {@code orazaka_verification_tokens} database table.
+ * JPA Entity mapping the {@code verification_tokens} database table.
  *
  * <p>Represents a temporary token hash generated for authentication, registration, or password
  * reset flows.
  */
 @Entity
-@Table(name = "orazaka_verification_tokens")
+@Table(name = "verification_tokens")
 public class VerificationTokenEntity {
 
   @Id

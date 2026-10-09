@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * JPA Entity mapping the {@code orazaka_api_keys} database table.
+ * JPA Entity mapping the {@code api_keys} database table.
  *
  * <p>Persists an inbound Personal Access Token: only the SHA-256 {@code keyHash} is stored (never
  * the plaintext secret), alongside a short display {@code keyPrefix} so users can recognise a key
@@ -15,7 +15,7 @@ import java.time.Instant;
  * for constant-time lookup during bearer authentication.
  */
 @Entity
-@Table(name = "orazaka_api_keys")
+@Table(name = "api_keys")
 public class ApiKeyEntity {
 
   @Id

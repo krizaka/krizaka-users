@@ -14,9 +14,9 @@ class IdentityDataSourcePropertiesTest {
   void validWiring() {
     var properties =
         new IdentityDataSourceProperties(
-            "jdbc:postgresql://localhost:5432/orazaka_identity_db", "orazaka_identity", "secret");
-    assertThat(properties.url()).contains("orazaka_identity_db");
-    assertThat(properties.username()).isEqualTo("orazaka_identity");
+            "jdbc:postgresql://localhost:5432/krizaka_users_db", "krizaka_users", "secret");
+    assertThat(properties.url()).contains("krizaka_users_db");
+    assertThat(properties.username()).isEqualTo("krizaka_users");
   }
 
   @Test

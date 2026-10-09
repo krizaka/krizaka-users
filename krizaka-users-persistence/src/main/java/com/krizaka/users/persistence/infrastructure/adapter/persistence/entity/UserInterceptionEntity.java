@@ -7,12 +7,12 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * JPA Entity mapping the {@code orazaka_user_interceptions} database table.
+ * JPA Entity mapping the {@code user_interceptions} database table.
  *
  * <p>Represents a block or check that intercepts a user flow (like onboarding).
  */
 @Entity
-@Table(name = "orazaka_user_interceptions")
+@Table(name = "user_interceptions")
 public class UserInterceptionEntity {
 
   @EmbeddedId private UserInterceptionId id;

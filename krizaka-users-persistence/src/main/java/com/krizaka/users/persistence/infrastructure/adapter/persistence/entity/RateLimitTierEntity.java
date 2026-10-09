@@ -7,13 +7,13 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * JPA Entity mapping the {@code orazaka_rate_limit_tiers} database table.
+ * JPA Entity mapping the {@code rate_limit_tiers} database table.
  *
  * <p>Represents a configured rate limiting tier that dictates bucket capacity, refill quotas, and
  * timing bounds.
  */
 @Entity
-@Table(name = "orazaka_rate_limit_tiers")
+@Table(name = "rate_limit_tiers")
 public class RateLimitTierEntity {
 
   @Id

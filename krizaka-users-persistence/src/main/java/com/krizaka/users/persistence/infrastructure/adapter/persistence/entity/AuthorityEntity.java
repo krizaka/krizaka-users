@@ -9,13 +9,13 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
- * JPA Entity mapping the {@code orazaka_authorities} database table.
+ * JPA Entity mapping the {@code authorities} database table.
  *
  * <p>Represents a security authority role granted to a user.
  */
 @Entity
 @Table(
-    name = "orazaka_authorities",
+    name = "authorities",
     uniqueConstraints =
         @UniqueConstraint(
             name = "unique_user_authority",

@@ -7,12 +7,12 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * JPA Entity mapping the {@code orazaka_password_resets} database table.
+ * JPA Entity mapping the {@code password_resets} database table.
  *
  * <p>Stores SHA-256 hashed password reset tokens with time-bound expiration.
  */
 @Entity
-@Table(name = "orazaka_password_resets")
+@Table(name = "password_resets")
 public class PasswordResetTokenEntity {
 
   @Id

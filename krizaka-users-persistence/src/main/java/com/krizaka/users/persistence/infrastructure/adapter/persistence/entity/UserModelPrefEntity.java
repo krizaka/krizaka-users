@@ -7,14 +7,14 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 /**
- * JPA Entity mapping the {@code orazaka_user_model_prefs} table.
+ * JPA Entity mapping the {@code user_model_prefs} table.
  *
  * <p>A user's OWN default model per capability {@code category}, overriding the global/admin
  * default ({@code orazaka_models.is_default}). {@code modelId} references {@code
  * orazaka_models(id)}; {@code voice} applies to {@code category = 'speech'}.
  */
 @Entity
-@Table(name = "orazaka_user_model_prefs")
+@Table(name = "user_model_prefs")
 @IdClass(UserModelPrefId.class)
 public class UserModelPrefEntity {
 

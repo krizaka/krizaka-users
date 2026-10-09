@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
 # ORAZAKA IDENTITY SERVICE — infrastructure wiring only (env-driven)
 # Shares orazaka_db until the Phase 2f database split (IDENTITY_DB_URL flips to
-# the dedicated orazaka_identity_db with its own role).
+# the dedicated krizaka_users_db with its own role).
 # ══════════════════════════════════════════════════════════════════════════════
 spring:
   application:
@@ -68,6 +68,12 @@ logging:
       max-history: 7
 
 krizaka:
+  messaging:
+    exchanges:
+      # The bus this service runs on belongs to the platform that hosts it: set EVENTS_EXCHANGE and
+      # DLX_EXCHANGE to join an existing one; standalone it creates and uses its own.
+      events: ${EVENTS_EXCHANGE:krizaka.events}
+      dead-letter: ${DLX_EXCHANGE:krizaka.dlx}
   users:
     # Session JWT signing — the same shared HS256 secret every host validates with.
     jwt:
@@ -87,6 +93,6 @@ krizaka:
         feedback: "classpath:config/feedback-schema.json"
   users-service:
     datasource:
-      url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/orazaka_identity_db}
-      username: ${IDENTITY_DB_USERNAME:orazaka_identity}
+      url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/krizaka_users_db}
+      username: ${IDENTITY_DB_USERNAME:krizaka_users}
       password: ${IDENTITY_DB_PASSWORD}

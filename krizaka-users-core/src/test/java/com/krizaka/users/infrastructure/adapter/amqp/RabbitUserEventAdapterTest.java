@@ -3,6 +3,7 @@ package com.krizaka.users.infrastructure.adapter.amqp;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
+import com.krizaka.messaging.topology.MessagingExchanges;
 import com.krizaka.users.domain.model.User;
 import com.krizaka.users.domain.model.UserRegisteredEvent;
 import com.krizaka.users.persistence.domain.model.OutboxMessage;
@@ -25,7 +26,9 @@ class RabbitUserEventAdapterTest {
 
   @BeforeEach
   void setUp() {
-    adapter = new RabbitUserEventAdapter(outboxStore);
+    adapter =
+        new RabbitUserEventAdapter(
+            outboxStore, new MessagingExchanges("platform.events", "platform.dlx"));
   }
 
   @Test
@@ -40,7 +43,7 @@ class RabbitUserEventAdapterTest {
     verify(outboxStore)
         .append(
             new OutboxMessage(
-                "user", user.id().toString(), "orazaka.events", "evt.user.registered", event));
+                "user", user.id().toString(), "platform.events", "evt.user.registered", event));
   }
 
   @Test

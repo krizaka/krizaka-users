@@ -9,7 +9,7 @@ import java.util.Objects;
  *
  * @param aggregateType the aggregate the message belongs to (e.g. {@code user})
  * @param aggregateId the aggregate identifier
- * @param exchange the target exchange ({@code orazaka.events})
+ * @param exchange the target exchange (the events exchange)
  * @param routingKey the routing key ({@code evt.{aggregate}.{type}})
  * @param payload the message payload, serialized to JSON by the store
  */
