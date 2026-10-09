@@ -1,5 +1,6 @@
 package com.krizaka.users.infrastructure.config;
 
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
@@ -11,7 +12,7 @@ import org.springframework.core.io.Resource;
  */
 @ConfigurationProperties(prefix = "krizaka.users")
 public record IdentityInfrastructureProperties(
-    EmailVerification emailVerification, Interceptions interceptions) {
+    EmailVerification emailVerification, Interceptions interceptions, Preferences preferences) {
 
   /** Compact constructor providing null-safe defaults for optional sub-records. */
   public IdentityInfrastructureProperties {
@@ -20,6 +21,9 @@ public record IdentityInfrastructureProperties(
     }
     if (interceptions == null) {
       interceptions = new Interceptions(false, Map.of());
+    }
+    if (preferences == null) {
+      preferences = new Preferences(List.of());
     }
   }
 
@@ -44,6 +48,24 @@ public record IdentityInfrastructureProperties(
       if (schemas == null) {
         schemas = Map.of();
       }
+    }
+  }
+
+  /**
+   * Rules on the preferences users write about themselves.
+   *
+   * @param reservedPrefixes key prefixes the hosting application reads as its own configuration — a
+   *     user may not store a preference under them (e.g. {@code app.}). {@code preference.} is
+   *     always reserved.
+   */
+  public record Preferences(List<String> reservedPrefixes) {
+
+    /** Compact constructor ensuring the list is never null and holds no blank prefix. */
+    public Preferences {
+      reservedPrefixes =
+          reservedPrefixes == null
+              ? List.of()
+              : reservedPrefixes.stream().filter(p -> p != null && !p.isBlank()).toList();
     }
   }
 }

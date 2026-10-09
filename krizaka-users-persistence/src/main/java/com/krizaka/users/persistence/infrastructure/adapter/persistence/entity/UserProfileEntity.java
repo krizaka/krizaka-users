@@ -22,15 +22,6 @@ public class UserProfileEntity {
   @Column(name = "theme", length = 50)
   private String theme = "emerald";
 
-  @Column(name = "voice_model", length = 50)
-  private String voiceModel = "alloy";
-
-  @Column(name = "primary_industry", length = 100)
-  private String primaryIndustry = "tech";
-
-  @Column(name = "ai_behavior")
-  private String aiBehavior;
-
   @Column(name = "raw_preferences", columnDefinition = "TEXT")
   @Convert(converter = JsonMapConverter.class)
   @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -55,30 +46,6 @@ public class UserProfileEntity {
 
   public void setTheme(String theme) {
     this.theme = theme;
-  }
-
-  public String getVoiceModel() {
-    return voiceModel;
-  }
-
-  public void setVoiceModel(String voiceModel) {
-    this.voiceModel = voiceModel;
-  }
-
-  public String getPrimaryIndustry() {
-    return primaryIndustry;
-  }
-
-  public void setPrimaryIndustry(String primaryIndustry) {
-    this.primaryIndustry = primaryIndustry;
-  }
-
-  public String getAiBehavior() {
-    return aiBehavior;
-  }
-
-  public void setAiBehavior(String aiBehavior) {
-    this.aiBehavior = aiBehavior;
   }
 
   public Map<String, Object> getRawPreferences() {

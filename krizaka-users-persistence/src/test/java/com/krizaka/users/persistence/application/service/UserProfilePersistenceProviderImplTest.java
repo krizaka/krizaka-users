@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*;
 import com.krizaka.users.persistence.domain.model.UserProfileDto;
 import com.krizaka.users.persistence.infrastructure.adapter.persistence.entity.UserProfileEntity;
 import com.krizaka.users.persistence.infrastructure.adapter.persistence.repository.UserProfileRepository;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,10 +37,7 @@ class UserProfilePersistenceProviderImplTest {
     UserProfileEntity entity = new UserProfileEntity();
     entity.setUserId("user-1");
     entity.setTheme("dark");
-    entity.setVoiceModel("shimmer");
-    entity.setPrimaryIndustry("finance");
-    entity.setAiBehavior("creative");
-    entity.setRawPreferences(Collections.emptyMap());
+    entity.setRawPreferences(Map.of("voiceModel", "shimmer"));
 
     when(repository.findById("user-1")).thenReturn(Optional.of(entity));
 
@@ -49,9 +46,7 @@ class UserProfilePersistenceProviderImplTest {
     assertThat(result).isPresent();
     assertThat(result.get().userId()).isEqualTo("user-1");
     assertThat(result.get().theme()).isEqualTo("dark");
-    assertThat(result.get().voiceModel()).isEqualTo("shimmer");
-    assertThat(result.get().primaryIndustry()).isEqualTo("finance");
-    assertThat(result.get().aiBehavior()).isEqualTo("creative");
+    assertThat(result.get().rawPreferences()).containsEntry("voiceModel", "shimmer");
 
     verify(repository).findById("user-1");
   }
@@ -67,9 +62,7 @@ class UserProfilePersistenceProviderImplTest {
   @Test
   @DisplayName("save persists and maps UserProfileDto")
   void save() {
-    UserProfileDto dto =
-        new UserProfileDto(
-            "user-1", "dark", "shimmer", "finance", "creative", Collections.emptyMap());
+    UserProfileDto dto = new UserProfileDto("user-1", "dark", Map.of("voiceModel", "shimmer"));
     UserProfileEntity entity = UserProfilePersistenceProviderImpl.toEntity(dto);
 
     when(repository.save(any(UserProfileEntity.class))).thenReturn(entity);
@@ -79,9 +72,7 @@ class UserProfilePersistenceProviderImplTest {
     assertThat(result).isNotNull();
     assertThat(result.userId()).isEqualTo("user-1");
     assertThat(result.theme()).isEqualTo("dark");
-    assertThat(result.voiceModel()).isEqualTo("shimmer");
-    assertThat(result.primaryIndustry()).isEqualTo("finance");
-    assertThat(result.aiBehavior()).isEqualTo("creative");
+    assertThat(result.rawPreferences()).containsEntry("voiceModel", "shimmer");
 
     verify(repository).save(any(UserProfileEntity.class));
   }

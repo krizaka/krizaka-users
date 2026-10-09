@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.krizaka.users.domain.model.UserProfile;
 import com.krizaka.users.domain.ports.outbound.UserProfileRepositoryPort;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,8 +33,7 @@ class UserProfileProviderImplTest {
   @Test
   @DisplayName("getProfile retrieves and returns UserProfile")
   void getProfile() {
-    UserProfile profile =
-        new UserProfile("user-1", "dark", "alloy", "tech", "balanced", Collections.emptyMap());
+    UserProfile profile = new UserProfile("user-1", "dark", Map.of("voiceModel", "alloy"));
     when(repository.findByUserId("user-1")).thenReturn(Optional.of(profile));
 
     UserProfile result = provider.getProfile("user-1");
@@ -42,9 +41,7 @@ class UserProfileProviderImplTest {
     assertThat(result).isNotNull();
     assertThat(result.userId()).isEqualTo("user-1");
     assertThat(result.theme()).isEqualTo("dark");
-    assertThat(result.voiceModel()).isEqualTo("alloy");
-    assertThat(result.primaryIndustry()).isEqualTo("tech");
-    assertThat(result.aiBehavior()).isEqualTo("balanced");
+    assertThat(result.attributes()).containsEntry("voiceModel", "alloy");
 
     verify(repository).findByUserId("user-1");
   }

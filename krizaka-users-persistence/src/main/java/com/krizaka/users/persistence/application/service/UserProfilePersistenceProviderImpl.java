@@ -45,9 +45,6 @@ class UserProfilePersistenceProviderImpl implements UserProfilePersistenceProvid
     return new UserProfileDto(
         entity.getUserId(),
         entity.getTheme(),
-        entity.getVoiceModel(),
-        entity.getPrimaryIndustry(),
-        entity.getAiBehavior(),
         entity.getRawPreferences() != null
             ? Map.copyOf(entity.getRawPreferences())
             : Collections.emptyMap());
@@ -60,9 +57,6 @@ class UserProfilePersistenceProviderImpl implements UserProfilePersistenceProvid
     UserProfileEntity entity = new UserProfileEntity();
     entity.setUserId(dto.userId());
     entity.setTheme(dto.theme());
-    entity.setVoiceModel(dto.voiceModel());
-    entity.setPrimaryIndustry(dto.primaryIndustry());
-    entity.setAiBehavior(dto.aiBehavior());
     entity.setRawPreferences(dto.rawPreferences());
     return entity;
   }

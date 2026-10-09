@@ -24,3 +24,14 @@ First release as a Krizaka building block (formerly `orazaka-users`, part of the
   in every other service.
 - Outbox relayed and messages deduplicated by `krizaka-messaging`.
 - Default JWT issuer `krizaka-users` (set `IDENTITY_JWT_ISSUER` to keep another).
+- `UserProfile` is `(userId, theme, attributes)`: application-defined attributes replace the AI-assistant fields
+  (`voiceModel`, `primaryIndustry`, `aiBehavior`), which the hosting application now stores as attributes.
+- Onboarding and feedback forms are the application's (`USERS_ONBOARDING_SCHEMA`, `USERS_FEEDBACK_SCHEMA`); the
+  built-in ones ask for a theme, a language and a display name.
+- Reserved preference namespaces are declared by the application (`krizaka.users.preferences.reserved-prefixes`).
+- Queues and exchanges: events go to `krizaka.messaging.exchanges.events`; database `krizaka_users_db`, role
+  `krizaka_users`, tables without a product prefix.
+
+### Removed
+
+- `user_model_prefs` and its persistence code: never read by any service.

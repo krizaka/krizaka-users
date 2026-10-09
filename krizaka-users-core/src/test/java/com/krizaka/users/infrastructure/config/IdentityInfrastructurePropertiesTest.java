@@ -33,8 +33,9 @@ class IdentityInfrastructurePropertiesTest {
   void composedProperties() {
     var ev = new IdentityInfrastructureProperties.EmailVerification(false);
     var inter = new IdentityInfrastructureProperties.Interceptions(false, null);
-    var props = new IdentityInfrastructureProperties(ev, inter);
+    var props = new IdentityInfrastructureProperties(ev, inter, null);
     assertNotNull(props.emailVerification());
+    assertNotNull(props.preferences().reservedPrefixes());
     assertNotNull(props.interceptions());
     assertFalse(props.emailVerification().enabled());
   }

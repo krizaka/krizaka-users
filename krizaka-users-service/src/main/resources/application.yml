@@ -88,9 +88,15 @@ krizaka:
       enabled: ${EMAIL_VERIFICATION_ENABLED:true}
     interceptions:
       enabled: ${INTERCEPTIONS_ENABLED:true}
+      # The forms are the application's: point these at its own schemas (file:… or classpath:…);
+      # the defaults ask only for a theme, a language and a display name.
       schemas:
-        onboarding: "classpath:config/onboarding-schema.json"
-        feedback: "classpath:config/feedback-schema.json"
+        onboarding: ${USERS_ONBOARDING_SCHEMA:classpath:config/onboarding-schema.json}
+        feedback: ${USERS_FEEDBACK_SCHEMA:classpath:config/feedback-schema.json}
+    preferences:
+      # Preference-key prefixes the hosting application reads as its own configuration: a user may
+      # not store a preference under them (comma-separated, e.g. "app.,billing.").
+      reserved-prefixes: ${USERS_RESERVED_PREFERENCE_PREFIXES:}
   users-service:
     datasource:
       url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/krizaka_users_db}

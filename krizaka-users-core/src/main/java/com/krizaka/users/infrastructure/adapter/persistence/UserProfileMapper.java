@@ -20,9 +20,6 @@ final class UserProfileMapper {
     return new UserProfile(
         dto.userId(),
         dto.theme() == null ? "emerald" : dto.theme(),
-        dto.voiceModel() == null ? "alloy" : dto.voiceModel(),
-        dto.primaryIndustry() == null ? "tech" : dto.primaryIndustry(),
-        dto.aiBehavior(),
         dto.rawPreferences() == null ? Map.of() : dto.rawPreferences());
   }
 
@@ -31,12 +28,6 @@ final class UserProfileMapper {
     if (domain == null) {
       return null;
     }
-    return new UserProfileDto(
-        domain.userId(),
-        domain.theme(),
-        domain.voiceModel(),
-        domain.primaryIndustry(),
-        domain.aiBehavior(),
-        domain.rawPreferences());
+    return new UserProfileDto(domain.userId(), domain.theme(), domain.attributes());
   }
 }

@@ -1,65 +1,48 @@
 package com.krizaka.users.domain.model;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class UserProfileTest {
 
   @Test
-  void validConstruction_setsAllFields() {
-    var profile =
-        new UserProfile("user-1", "dark", "shimmer", "finance", "creative", Map.of("key", "val"));
+  void carriesTheThemeAndTheApplicationsAttributesAsGiven() {
+    var profile = new UserProfile("user-1", "dark", Map.of("voiceModel", "shimmer", "level", 3));
+
     assertEquals("user-1", profile.userId());
     assertEquals("dark", profile.theme());
-    assertEquals("shimmer", profile.voiceModel());
-    assertEquals("finance", profile.primaryIndustry());
-    assertEquals("creative", profile.aiBehavior());
-    assertEquals(Map.of("key", "val"), profile.rawPreferences());
+    assertEquals(Map.of("voiceModel", "shimmer", "level", 3), profile.attributes());
   }
 
   @Test
   void nullUserId_throws() {
-    assertThrows(
-        NullPointerException.class,
-        () -> new UserProfile(null, "dark", "alloy", "tech", "balanced", null));
+    assertThrows(NullPointerException.class, () -> new UserProfile(null, "dark", null));
   }
 
   @Test
   void nullTheme_throws() {
-    assertThrows(
-        NullPointerException.class,
-        () -> new UserProfile("user", null, "alloy", "tech", "balanced", null));
+    assertThrows(NullPointerException.class, () -> new UserProfile("user", null, null));
   }
 
   @Test
-  void nullVoiceModel_throws() {
-    assertThrows(
-        NullPointerException.class,
-        () -> new UserProfile("user", "dark", null, "tech", "balanced", null));
+  void nullAttributes_areEmpty() {
+    assertTrue(new UserProfile("user", "dark", null).attributes().isEmpty());
   }
 
   @Test
-  void nullPrimaryIndustry_throws() {
-    assertThrows(
-        NullPointerException.class,
-        () -> new UserProfile("user", "dark", "alloy", null, "balanced", null));
-  }
-
-  @Test
-  void nullRawPreferences_defaultsToEmptyMap() {
-    var profile = new UserProfile("user", "dark", "alloy", "tech", "balanced", null);
-    assertNotNull(profile.rawPreferences());
-    assertTrue(profile.rawPreferences().isEmpty());
-  }
-
-  @Test
-  void rawPreferences_isDefensivelyCopied() {
-    var mutable = new java.util.HashMap<String, Object>();
+  void attributes_areDefensivelyCopied() {
+    var mutable = new HashMap<String, Object>();
     mutable.put("key", "value");
-    var profile = new UserProfile("user", "dark", "alloy", "tech", "balanced", mutable);
-    var rawPrefs = profile.rawPreferences();
-    assertThrows(UnsupportedOperationException.class, () -> rawPrefs.put("new", "val"));
+    var profile = new UserProfile("user", "dark", mutable);
+
+    mutable.put("other", "x");
+
+    assertEquals(Map.of("key", "value"), profile.attributes());
+    assertThrows(UnsupportedOperationException.class, () -> profile.attributes().put("n", "v"));
   }
 }

@@ -43,6 +43,31 @@ service. Domain events leave through a transactional outbox (relayed by `krizaka
 and `evt.password.reset`, which [`krizaka-notifications`](https://github.com/krizaka/krizaka-notifications) turns into
 the verification and reset e-mails.
 
+## Profiles and onboarding are yours
+
+The service knows users, not your product. A profile is a theme plus **attributes your application defines** — the
+answers of your onboarding form — stored as given and never interpreted. You decide which forms users see:
+
+```yaml
+krizaka:
+  users:
+    interceptions:
+      schemas:
+        onboarding: file:/etc/myapp/onboarding-schema.json   # USERS_ONBOARDING_SCHEMA
+        feedback: file:/etc/myapp/feedback-schema.json       # USERS_FEEDBACK_SCHEMA
+    preferences:
+      reserved-prefixes: myapp.                              # USERS_RESERVED_PREFERENCE_PREFIXES
+```
+
+The built-in forms ask only for a theme, a language and a display name. `reserved-prefixes` lists the preference
+namespaces your application reads as configuration, so a user can never store a preference that impersonates it
+(`preference.` is always reserved). Read your attributes with your own defaults:
+
+```java
+UserProfile profile = users.getProfile(userId);
+String plan = (String) profile.attributes().getOrDefault("plan", "free");
+```
+
 ## Modules
 
 | Artifact | Published | Role |

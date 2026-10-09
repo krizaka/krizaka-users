@@ -128,26 +128,26 @@ class IdentityServiceImpl implements IdentityService {
   }
 
   /**
-   * Refuses preference keys that spell a namespace the platform reads, or a key the pipeline owns.
+   * Refuses preference keys that spell a namespace the hosting application reads, or a key it owns.
    *
-   * <p><b>Depth, not the fix.</b> The fix is that every context builder places what a user wrote
-   * under {@code preference.} (ADR-064), so a stored {@code orazaka.metering.deferred} arrives as
-   * {@code preference.orazaka.metering.deferred} and nothing reads it. This keeps such a key from
-   * being stored at all, so a builder written tomorrow without that discipline finds no bad data
-   * waiting for it. The prefixes are {@code Context}'s, spelled here because identity does not
-   * depend on the engine.
+   * <p>Depth, not the fix: an application that builds its runtime context from preferences should
+   * place what a user wrote under {@code preference.}, so a stored key cannot impersonate its own
+   * configuration. This keeps such a key from being stored at all, so a context builder written
+   * tomorrow without that discipline finds no bad data waiting for it. The application declares its
+   * namespaces in {@code krizaka.users.preferences.reserved-prefixes}.
    */
-  private static void rejectReservedKeys(Map<String, Object> preferences) {
+  private void rejectReservedKeys(Map<String, Object> preferences) {
     if (preferences == null) {
       return;
     }
+    List<String> prefixes = properties.preferences().reservedPrefixes();
     List<String> reserved =
         preferences.keySet().stream()
             .filter(
                 key ->
                     key == null
-                        || key.startsWith("orazaka.")
                         || key.startsWith("preference.")
+                        || prefixes.stream().anyMatch(key::startsWith)
                         || RESERVED_PREFERENCE_KEYS.contains(key))
             .map(String::valueOf)
             .sorted()

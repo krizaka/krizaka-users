@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*;
 import com.krizaka.users.domain.model.UserProfile;
 import com.krizaka.users.persistence.domain.model.UserProfileDto;
 import com.krizaka.users.persistence.domain.ports.UserProfilePersistenceProvider;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,8 +34,7 @@ class UserProfileRepositoryAdapterTest {
   @Test
   @DisplayName("findByUserId retrieves and maps UserProfileDto to domain model")
   void findByUserId() {
-    UserProfileDto dto =
-        new UserProfileDto("user-123", "dark", "alloy", "tech", "balanced", Collections.emptyMap());
+    UserProfileDto dto = new UserProfileDto("user-123", "dark", Map.of("voiceModel", "alloy"));
     when(provider.findByUserId("user-123")).thenReturn(Optional.of(dto));
 
     Optional<UserProfile> result = adapter.findByUserId("user-123");
@@ -43,9 +42,7 @@ class UserProfileRepositoryAdapterTest {
     assertThat(result).isPresent();
     assertThat(result.get().userId()).isEqualTo("user-123");
     assertThat(result.get().theme()).isEqualTo("dark");
-    assertThat(result.get().voiceModel()).isEqualTo("alloy");
-    assertThat(result.get().primaryIndustry()).isEqualTo("tech");
-    assertThat(result.get().aiBehavior()).isEqualTo("balanced");
+    assertThat(result.get().attributes()).containsEntry("voiceModel", "alloy");
 
     verify(provider).findByUserId("user-123");
   }

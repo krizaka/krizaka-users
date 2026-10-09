@@ -75,12 +75,8 @@ CREATE TABLE user_interceptions (
 CREATE TABLE user_profiles (
     user_id VARCHAR(255) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     theme VARCHAR(50) DEFAULT 'emerald',
-    -- voice_model: legacy default voice (mapped by the non-null UserProfile.voiceModel
-    -- domain field). The structured forward path is user_model_prefs.voice; this
-    -- column is kept until the UserProfile-record refactor lands (tracked follow-up).
-    voice_model VARCHAR(50) DEFAULT 'alloy',
-    primary_industry VARCHAR(100) DEFAULT 'tech',
-    ai_behavior TEXT,
+    -- Application-defined profile attributes (JSON): typically the answers of the application's
+    -- onboarding form. The users service stores them and never interprets a key.
     raw_preferences TEXT
 );
 
@@ -126,21 +122,6 @@ CREATE TABLE rate_limits (
 );
 CREATE UNIQUE INDEX idx_rate_limits_default
     ON rate_limits (is_default) WHERE is_default;
-
--- ── Per-user default model & voice ───────────────────────────────────────────
--- A user's OWN default model per capability category, overriding the global/admin
--- default (orazaka_models.is_default). When a user has no row for a category, the
--- engine falls back to that category's is_default — so the user is never blocked and
--- can change their default freely. `voice` applies to category = 'speech' only.
--- model_id is an OPAQUE reference into the config plane's orazaka_models — no FK
--- across contexts (a stale id falls back to the category default; strangler seam).
-CREATE TABLE user_model_prefs (
-    user_id  VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    category VARCHAR(50)  NOT NULL,
-    model_id INT          NOT NULL,
-    voice    VARCHAR(50),
-    PRIMARY KEY (user_id, category)
-);
 
 -- Identity transactional outbox (AGENTS.md §6): identity domain events
 -- (evt.user.*, evt.password.*) are appended in the business transaction and

@@ -1,6 +1,7 @@
 package com.krizaka.users.infrastructure.adapter.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.krizaka.users.domain.model.UserProfile;
 import com.krizaka.users.persistence.domain.model.UserProfileDto;
@@ -10,17 +11,14 @@ import org.junit.jupiter.api.Test;
 class UserProfileMapperTest {
 
   @Test
-  void toDomain_mapsAllFields() {
-    var dto =
-        new UserProfileDto(
-            "user-1", "dark", "shimmer", "finance", "creative", Map.of("key", "value"));
+  void toDomain_mapsTheThemeAndTheStoredAttributes() {
+    var dto = new UserProfileDto("user-1", "dark", Map.of("voiceModel", "shimmer"));
+
     UserProfile domain = UserProfileMapper.toDomain(dto);
+
     assertEquals("user-1", domain.userId());
     assertEquals("dark", domain.theme());
-    assertEquals("shimmer", domain.voiceModel());
-    assertEquals("finance", domain.primaryIndustry());
-    assertEquals("creative", domain.aiBehavior());
-    assertEquals(Map.of("key", "value"), domain.rawPreferences());
+    assertEquals(Map.of("voiceModel", "shimmer"), domain.attributes());
   }
 
   @Test
@@ -30,24 +28,19 @@ class UserProfileMapperTest {
 
   @Test
   void toDomain_nullFields_applyDefaults() {
-    var dto = new UserProfileDto("user-1", null, null, null, null, null);
-    UserProfile domain = UserProfileMapper.toDomain(dto);
+    UserProfile domain = UserProfileMapper.toDomain(new UserProfileDto("user-1", null, null));
+
     assertEquals("emerald", domain.theme());
-    assertEquals("alloy", domain.voiceModel());
-    assertEquals("tech", domain.primaryIndustry());
-    assertEquals(Map.of(), domain.rawPreferences());
+    assertEquals(Map.of(), domain.attributes());
   }
 
   @Test
-  void toDto_mapsAllFields() {
-    var domain =
-        new UserProfile("user-1", "dark", "shimmer", "finance", "creative", Map.of("key", "value"));
-    UserProfileDto dto = UserProfileMapper.toDto(domain);
+  void toDto_storesTheAttributesAsRawPreferences() {
+    UserProfileDto dto =
+        UserProfileMapper.toDto(new UserProfile("user-1", "dark", Map.of("key", "value")));
+
     assertEquals("user-1", dto.userId());
     assertEquals("dark", dto.theme());
-    assertEquals("shimmer", dto.voiceModel());
-    assertEquals("finance", dto.primaryIndustry());
-    assertEquals("creative", dto.aiBehavior());
     assertEquals(Map.of("key", "value"), dto.rawPreferences());
   }
 

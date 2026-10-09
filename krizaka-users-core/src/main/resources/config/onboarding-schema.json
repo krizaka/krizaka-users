@@ -1,6 +1,6 @@
 {
-  "title": "Onboarding Profile",
-  "description": "Please configure your primary AI assistant preferences.",
+  "title": "Welcome",
+  "description": "A few choices to set up your account. You can change them later in your profile.",
   "fields": [
     {
       "name": "theme",
@@ -16,36 +16,21 @@
       "defaultValue": "emerald"
     },
     {
-      "name": "voiceModel",
-      "label": "Default TTS Voice Model",
+      "name": "language",
+      "label": "Preferred Language",
       "type": "select",
       "required": true,
       "options": [
-        {"label": "Alloy (Neutral)", "value": "alloy"},
-        {"label": "Echo (Warm)", "value": "echo"},
-        {"label": "Fable (British)", "value": "fable"},
-        {"label": "Nova (Femme)", "value": "nova"}
+        {"label": "English", "value": "en"},
+        {"label": "Français", "value": "fr"}
       ],
-      "defaultValue": "alloy"
+      "defaultValue": "en"
     },
     {
-      "name": "primaryIndustry",
-      "label": "Primary Industry / Domain",
-      "type": "select",
-      "required": true,
-      "options": [
-        {"label": "Software Engineering", "value": "tech"},
-        {"label": "Finance & Analytics", "value": "finance"},
-        {"label": "Creative Arts & Design", "value": "creative"},
-        {"label": "Healthcare & Life Sciences", "value": "healthcare"}
-      ],
-      "defaultValue": "tech"
-    },
-    {
-      "name": "aiBehavior",
-      "label": "AI Assistant Personality / Behavior",
-      "type": "textarea",
-      "placeholder": "e.g. Concisely provide direct technical answers, or be verbose and pedagogical.",
+      "name": "displayName",
+      "label": "How should we call you?",
+      "type": "text",
+      "placeholder": "Your name or a nickname",
       "required": false
     }
   ]

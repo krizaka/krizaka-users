@@ -1,6 +1,6 @@
 {
-  "title": "System Feedback",
-  "description": "Please let us know how we can improve your AI workspace experience.",
+  "title": "Feedback",
+  "description": "Tell us how we can improve.",
   "fields": [
     {
       "name": "satisfaction",
@@ -8,11 +8,26 @@
       "type": "select",
       "required": true,
       "options": [
-        {"label": "⭐⭐⭐⭐⭐ Excellent", "value": "5"},
-        {"label": "⭐⭐⭐⭐ Very Good", "value": "4"},
-        {"label": "⭐⭐⭐ Satisfactory", "value": "3"},
-        {"label": "⭐⭐ Fair", "value": "2"},
-        {"label": "⭐ Poor", "value": "1"}
+        {
+          "label": "⭐⭐⭐⭐⭐ Excellent",
+          "value": "5"
+        },
+        {
+          "label": "⭐⭐⭐⭐ Very Good",
+          "value": "4"
+        },
+        {
+          "label": "⭐⭐⭐ Satisfactory",
+          "value": "3"
+        },
+        {
+          "label": "⭐⭐ Fair",
+          "value": "2"
+        },
+        {
+          "label": "⭐ Poor",
+          "value": "1"
+        }
       ],
       "defaultValue": "5"
     },
@@ -22,10 +37,22 @@
       "type": "select",
       "required": true,
       "options": [
-        {"label": "Professional Work", "value": "professional"},
-        {"label": "Personal Projects", "value": "personal"},
-        {"label": "Academic Research", "value": "academic"},
-        {"label": "Exploration", "value": "exploration"}
+        {
+          "label": "Professional Work",
+          "value": "professional"
+        },
+        {
+          "label": "Personal Projects",
+          "value": "personal"
+        },
+        {
+          "label": "Academic Research",
+          "value": "academic"
+        },
+        {
+          "label": "Exploration",
+          "value": "exploration"
+        }
       ],
       "defaultValue": "professional"
     },

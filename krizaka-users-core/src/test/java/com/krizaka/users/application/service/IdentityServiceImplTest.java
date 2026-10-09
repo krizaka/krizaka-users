@@ -65,6 +65,9 @@ class IdentityServiceImplTest {
 
   @BeforeEach
   void setUp() {
+    org.mockito.Mockito.lenient()
+        .when(properties.preferences())
+        .thenReturn(new IdentityInfrastructureProperties.Preferences(java.util.List.of()));
     service =
         new IdentityServiceImpl(
             userRepository,
@@ -152,6 +155,10 @@ class IdentityServiceImplTest {
 
   @Test
   void updatePreferences_refusesKeysThePlatformReads() {
+    // The hosting application declares its namespace (krizaka.users.preferences.reserved-prefixes).
+    when(properties.preferences())
+        .thenReturn(
+            new IdentityInfrastructureProperties.Preferences(java.util.List.of("orazaka.")));
     // ADR-064. Depth: the namespace at every context builder is the fix; this keeps the bad key
     // from being stored for a builder that forgets it.
     for (String reserved :
