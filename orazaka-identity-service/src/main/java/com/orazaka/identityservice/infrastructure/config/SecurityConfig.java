@@ -1,5 +1,6 @@
 package com.orazaka.identityservice.infrastructure.config;
 
+import com.krizaka.security.web.SecurityBaseline;
 import com.orazaka.identity.domain.model.User;
 import com.orazaka.identity.domain.ports.inbound.ApiKeyService;
 import com.orazaka.identity.domain.ports.inbound.IdentityService;
@@ -11,7 +12,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ProviderNotFoundException;
@@ -19,8 +19,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -56,7 +54,7 @@ public class SecurityConfig {
   }
 
   /** The authority a machine-to-machine caller presents on /internal/v1 (ADR-035). */
-  private static final String SERVICE_AUTHORITY = "SERVICE";
+  private static final String SERVICE_AUTHORITY = SecurityBaseline.SERVICE_AUTHORITY;
 
   @Bean
   public AuthenticationManager authenticationManager() {
@@ -133,54 +131,29 @@ public class SecurityConfig {
     var resolver = new DefaultBearerTokenResolver();
     resolver.setAllowUriQueryParameter(true);
 
-    http.csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2
-                    .bearerTokenResolver(resolver)
-                    .opaqueToken(opaque -> opaque.authenticationManager(authenticationManager)))
-        .authorizeHttpRequests(
+    SecurityBaseline.apply(
+            http,
             authz ->
                 authz
-                    // The baseline every other service declares, and this one did not: a CORS
-                    // preflight carries no credentials and must never be answered 401, and an
-                    // error dispatch that requires authentication turns every failure into a
-                    // second, misleading one (ADR-058 §3).
-                    .requestMatchers(HttpMethod.OPTIONS, "/**")
-                    .permitAll()
-                    .requestMatchers("/error")
-                    .permitAll()
                     .requestMatchers(
                         "/api/v1/auth/login",
                         "/api/v1/auth/register",
                         "/api/v1/auth/verify",
                         "/api/v1/auth/oauth",
                         "/api/v1/auth/forgot",
-                        "/api/v1/auth/reset",
-                        "/actuator/health",
-                        "/actuator/info")
+                        "/api/v1/auth/reset")
                     .permitAll()
-                    // Authenticated, not merely unrouted. The edge not routing /internal/** is
-                    // topology, and topology holds only as long as the topology does: one SSRF in
-                    // an estate where every pod reaches every pod turns this into an anonymous
-                    // call. The edge rule stays as the second layer (ADR-035).
-                    //
-                    // "SERVICE", not "SCOPE_internal": the converter above is
-                    // setAuthoritiesClaimName("roles") with an empty prefix, so the authority IS
-                    // the raw claim value. A prefixed matcher fails closed against a correct
-                    // token, and the tempting repair is to weaken the matcher.
-                    .requestMatchers("/internal/v1/**")
-                    .hasAuthority("SERVICE")
                     .requestMatchers("/api/v1/profile/**")
                     .hasAnyAuthority(ADMIN, USER)
                     .requestMatchers("/api/v1/api-keys/**")
                     .hasAnyAuthority(ADMIN, USER)
                     .requestMatchers("/api/v1/credentials/**")
-                    .hasAnyAuthority(ADMIN, USER)
-                    .anyRequest()
-                    .authenticated());
+                    .hasAnyAuthority(ADMIN, USER))
+        .oauth2ResourceServer(
+            oauth2 ->
+                oauth2
+                    .bearerTokenResolver(resolver)
+                    .opaqueToken(opaque -> opaque.authenticationManager(authenticationManager)));
     return http.build();
   }
 }
