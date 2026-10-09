@@ -41,7 +41,9 @@ Passwords are hashed with BCrypt, provider keys encrypted with AES-256, sessions
 claim that [`krizaka-security`](https://github.com/krizaka/krizaka-platform-kit) verifies locally in every other
 service. Domain events leave through a transactional outbox (relayed by `krizaka-messaging`): `evt.user.registered`
 and `evt.password.reset`, which [`krizaka-notifications`](https://github.com/krizaka/krizaka-notifications) turns into
-the verification and reset e-mails.
+the verification and reset e-mails. The outbox also implements `krizaka-messaging`'s `OutboxStore.append`, so an
+`EventPublisher` can write to it: the event's `messageId` and envelope headers (`kz-type`, `kz-version`, …) are stored
+in `identity_outbox` (`headers jsonb`) and published as stored.
 
 ## Profiles and onboarding are yours
 

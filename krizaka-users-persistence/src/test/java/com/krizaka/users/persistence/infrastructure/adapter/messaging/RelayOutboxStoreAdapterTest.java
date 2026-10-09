@@ -1,10 +1,12 @@
 package com.krizaka.users.persistence.infrastructure.adapter.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.krizaka.messaging.outbox.NewOutboxMessage;
 import com.krizaka.messaging.outbox.OutboxMessage;
 import com.krizaka.users.persistence.domain.model.PendingOutboxEvent;
 import com.krizaka.users.persistence.domain.ports.OutboxStore;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
 class RelayOutboxStoreAdapterTest {
@@ -35,7 +38,8 @@ class RelayOutboxStoreAdapterTest {
                     "evt.user.registered",
                     messageId,
                     Map.of("email", "a@b.c"),
-                    2)));
+                    2,
+                    Map.of("kz-type", "evt.user.registered"))));
 
     OutboxMessage relayed = adapter.lockPendingBatch(10).get(0);
 
@@ -44,6 +48,7 @@ class RelayOutboxStoreAdapterTest {
     assertThat(relayed.routingKey()).isEqualTo("evt.user.registered");
     assertThat(relayed.messageId()).isEqualTo(messageId.toString());
     assertThat(relayed.attempts()).isEqualTo(2);
+    assertThat(relayed.headers()).containsEntry("kz-type", "evt.user.registered");
     assertThat(new String(relayed.body(), StandardCharsets.UTF_8))
         .isEqualTo("{\"email\":\"a@b.c\"}");
   }
@@ -60,5 +65,47 @@ class RelayOutboxStoreAdapterTest {
     verify(outboxStore).markPublished(id);
     verify(outboxStore).recordFailure(id, 3);
     assertThat(adapter.purgePublishedBefore(cutoff)).isEqualTo(4);
+  }
+
+  @Test
+  void anEventPublishersRowKeepsItsMessageIdAndEnvelope() {
+    UUID messageId = UUID.randomUUID();
+
+    adapter.append(
+        new NewOutboxMessage(
+            "platform.events",
+            "evt.user.registered",
+            messageId.toString(),
+            "{\"email\":\"a@b.c\"}".getBytes(StandardCharsets.UTF_8),
+            Map.of("kz-type", "evt.user.registered", "kz-version", "1")));
+
+    ArgumentCaptor<com.krizaka.users.persistence.domain.model.OutboxMessage> appended =
+        ArgumentCaptor.forClass(com.krizaka.users.persistence.domain.model.OutboxMessage.class);
+    verify(outboxStore).append(appended.capture());
+    var row = appended.getValue();
+    assertThat(row.messageId()).isEqualTo(messageId);
+    assertThat(row.aggregateType()).isEqualTo("user");
+    assertThat(row.aggregateId()).isEqualTo(messageId.toString());
+    assertThat(row.exchange()).isEqualTo("platform.events");
+    assertThat(row.routingKey()).isEqualTo("evt.user.registered");
+    assertThat(row.payload()).isEqualTo(Map.of("email", "a@b.c"));
+    assertThat(row.headers())
+        .containsEntry("kz-type", "evt.user.registered")
+        .containsEntry("kz-version", "1");
+  }
+
+  @Test
+  void aMessageIdTheTableCannotStoreIsRefused() {
+    assertThatIllegalArgumentException()
+        .isThrownBy(
+            () ->
+                adapter.append(
+                    new NewOutboxMessage(
+                        "platform.events",
+                        "evt.user.registered",
+                        "not-a-uuid",
+                        "{}".getBytes(),
+                        null)))
+        .withMessageContaining("not-a-uuid");
   }
 }
