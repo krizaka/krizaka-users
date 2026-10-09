@@ -40,7 +40,7 @@ public interface IdentityService {
    * @param email Plaintext email.
    * @param password Plaintext password.
    * @return Fully resolved {@link User} if successful.
-   * @throws com.krizaka.users.exception.BadCredentialsException if authentication fails.
+   * @throws com.krizaka.users.domain.exception.BadCredentialsException if authentication fails.
    */
   User authenticate(String email, String password);
 
@@ -52,7 +52,7 @@ public interface IdentityService {
    * @param password Plaintext password to hash.
    * @param language Initial language preference.
    * @return Fully resolved {@link User}.
-   * @throws com.krizaka.users.exception.UserAlreadyExistsException if email is taken.
+   * @throws com.krizaka.users.domain.exception.UserAlreadyExistsException if email is taken.
    */
   User register(String username, String email, String password, String language);
 

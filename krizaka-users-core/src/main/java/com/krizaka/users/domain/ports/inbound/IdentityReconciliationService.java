@@ -9,8 +9,8 @@ import com.krizaka.users.domain.model.User;
  * implementation ({@code IdentityReconciliationServiceImpl}) is package-private within {@code
  * krizaka-users-core} and discovered by Spring component scanning.
  *
- * @see com.krizaka.users.federation.OAuth2ProviderVerifier
- * @see com.krizaka.users.domain.ExtractedProfile
+ * @see com.krizaka.users.domain.ports.outbound.OAuth2ProviderVerifier
+ * @see com.krizaka.users.domain.model.ExtractedProfile
  */
 public interface IdentityReconciliationService {
 
