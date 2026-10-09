@@ -1,7 +1,7 @@
 -- ============================================================================
 -- ORAZAKA — Local DB bootstrap · 10 — IDENTITY CONTEXT
 -- ----------------------------------------------------------------------------
--- Owner: Identity service (orazaka-identity + persistence-identity).
+-- Owner: Identity service (krizaka-users-core + persistence-identity).
 -- Everything "who is the actor and what may they do": users, credentials,
 -- authorities, tokens, profiles, rate-limit tiers, per-user model prefs.
 -- Other contexts reference the user ONLY by an opaque ActorId — no inbound or
