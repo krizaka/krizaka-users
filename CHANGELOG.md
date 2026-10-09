@@ -6,6 +6,17 @@ Every Krizaka JVM artifact is released at the same version.
 
 ## [Unreleased]
 
+### Added
+
+- The identity outbox implements `krizaka-messaging`'s `OutboxStore.append(NewOutboxMessage)`: a row written by an
+  `EventPublisher` keeps its `messageId` and its envelope headers, and the relay publishes them as AMQP headers.
+  `IdentityOutboxIT` proves it against the real `identity_outbox` table.
+
+### Changed
+
+- `identity_outbox` gains `headers JSONB NOT NULL DEFAULT '{}'` (`infra/initdb/10-identity.sql`). An existing database
+  needs `ALTER TABLE identity_outbox ADD COLUMN IF NOT EXISTS headers JSONB NOT NULL DEFAULT '{}'::jsonb;`.
+
 ## [0.1.0]
 
 First release as a Krizaka building block (formerly `orazaka-users`, part of the Orazaka platform).

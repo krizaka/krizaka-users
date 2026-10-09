@@ -134,6 +134,9 @@ CREATE TABLE identity_outbox (
     routing_key VARCHAR(255) NOT NULL,
     message_id UUID NOT NULL UNIQUE,
     payload JSONB NOT NULL,
+    -- AMQP headers published with the message: the event envelope (kz-type, kz-version,
+    -- kz-producer, kz-correlation-id, kz-occurred-at) of a row written by an EventPublisher.
+    headers JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     published_at TIMESTAMP WITH TIME ZONE,
     attempts INT NOT NULL DEFAULT 0,

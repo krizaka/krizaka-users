@@ -45,6 +45,8 @@ class OutboxStoreImpl implements OutboxStore {
             message.exchange(),
             message.routingKey(),
             payload,
+            message.messageId(),
+            message.headers(),
             Instant.now()));
   }
 
@@ -97,6 +99,7 @@ class OutboxStoreImpl implements OutboxStore {
         entity.getRoutingKey(),
         entity.getMessageId(),
         entity.getPayload(),
-        entity.getAttempts());
+        entity.getAttempts(),
+        entity.getHeaders());
   }
 }

@@ -38,6 +38,10 @@ public class OutboxEventEntity {
   @JdbcTypeCode(SqlTypes.JSON)
   private Map<String, Object> payload;
 
+  @Column(name = "headers", columnDefinition = "jsonb", nullable = false, updatable = false)
+  @JdbcTypeCode(SqlTypes.JSON)
+  private Map<String, String> headers;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
@@ -61,13 +65,30 @@ public class OutboxEventEntity {
       String routingKey,
       Map<String, Object> payload,
       Instant createdAt) {
+    this(aggregateType, aggregateId, exchange, routingKey, payload, null, Map.of(), createdAt);
+  }
+
+  /**
+   * Creates a fresh, unpublished outbox row with the message id and headers chosen by its writer
+   * ({@code null} message id: a new one).
+   */
+  public OutboxEventEntity(
+      String aggregateType,
+      String aggregateId,
+      String exchange,
+      String routingKey,
+      Map<String, Object> payload,
+      UUID messageId,
+      Map<String, String> headers,
+      Instant createdAt) {
     this.id = UUID.randomUUID();
     this.aggregateType = aggregateType;
     this.aggregateId = aggregateId;
     this.exchange = exchange;
     this.routingKey = routingKey;
-    this.messageId = UUID.randomUUID();
+    this.messageId = messageId != null ? messageId : UUID.randomUUID();
     this.payload = payload;
+    this.headers = headers != null ? Map.copyOf(headers) : Map.of();
     this.createdAt = createdAt;
     this.attempts = 0;
     this.nextAttemptAt = createdAt;
@@ -99,6 +120,10 @@ public class OutboxEventEntity {
 
   public Map<String, Object> getPayload() {
     return payload;
+  }
+
+  public Map<String, String> getHeaders() {
+    return headers != null ? headers : Map.of();
   }
 
   public Instant getCreatedAt() {

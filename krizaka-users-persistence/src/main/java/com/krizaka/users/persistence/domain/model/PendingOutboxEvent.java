@@ -13,6 +13,7 @@ import java.util.UUID;
  * @param messageId the AMQP message id consumers deduplicate on (AGENTS.md §6)
  * @param payload the JSON payload as a map
  * @param attempts publish attempts so far
+ * @param headers the AMQP headers the message carries; empty when none
  */
 public record PendingOutboxEvent(
     UUID id,
@@ -20,7 +21,8 @@ public record PendingOutboxEvent(
     String routingKey,
     UUID messageId,
     Map<String, Object> payload,
-    int attempts) {
+    int attempts,
+    Map<String, String> headers) {
 
   public PendingOutboxEvent {
     Objects.requireNonNull(id, "id cannot be null");
@@ -31,5 +33,6 @@ public record PendingOutboxEvent(
     if (attempts < 0) {
       throw new IllegalArgumentException("attempts cannot be negative");
     }
+    headers = (headers != null) ? Map.copyOf(headers) : Map.of();
   }
 }
