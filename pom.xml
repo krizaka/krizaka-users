@@ -38,6 +38,11 @@
 
     <properties>
         <archunit.version>1.3.0</archunit.version>
+        <!-- 0.2.0 deliberately breaks 0.1.0 (the outbox events gained their AMQP headers:
+             PendingOutboxEvent's constructor changed) — a minor before 1.0, as release-please's
+             bump-minor-pre-major allows. japicmp (krizaka-parent, release profile) reports it
+             without failing; set this back to true once 0.2.0 is released. -->
+        <japicmp.breakBuildOnBinaryIncompatibleModifications>false</japicmp.breakBuildOnBinaryIncompatibleModifications>
     </properties>
 
     <modules>
