@@ -20,6 +20,10 @@
 - **Configuration** lives under `krizaka.users.*` and `krizaka.users-service.*`, typed by `@ConfigurationProperties`
   records that validate themselves.
 - **Owns its schema**: `infra/initdb/10-identity.sql`, read by the integration tests through `InitDb.locate`.
+- **Services ship as Docker images, never on Maven Central.** Only the libraries (`-api`, `-client`, …) are published; a
+  `*-service` host sets `maven.deploy.skip` and is listed in the root POM's `central-publishing-maven-plugin`
+  `excludeArtifacts` (the plugin stages every module of the reactor otherwise). The `publishable-artifact-size` enforcer
+  rule fails `verify` when a published jar exceeds 5 MB — a runnable (fat) jar never reaches Central.
 
 ## Definition of done
 
