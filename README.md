@@ -113,6 +113,19 @@ class InvoiceService {
 }
 ```
 
+## Events it publishes
+
+Through its outbox, on the platform's events exchange (`krizaka.messaging.exchanges.events`); the body is the bare event,
+the envelope travels in the `kz-*` AMQP headers. Each event has a JSON Schema (draft 2020-12) in `krizaka-users-api`:
+
+| Routing key | Schema |
+|:---|:---|
+| `evt.user.registered` | [`events/evt.user.registered.v1.json`](krizaka-users-api/src/main/resources/events/evt.user.registered.v1.json) |
+| `evt.password.reset` | [`events/evt.password.reset.v1.json`](krizaka-users-api/src/main/resources/events/evt.password.reset.v1.json) |
+
+A consumer keeps its own copy of the event and checks it against the schema with `krizaka-test-support`'s
+`EventContractTest` (`krizaka-users-api` as a `test` dependency only).
+
 ## Run the service
 
 ```bash

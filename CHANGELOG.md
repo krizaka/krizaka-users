@@ -8,6 +8,9 @@ Every Krizaka JVM artifact is released at the same version.
 
 ### Added
 
+- Event contracts: `krizaka-users-api` publishes the JSON Schema (draft 2020-12) of each event it emits —
+  `events/evt.user.registered.v1.json`, `events/evt.password.reset.v1.json` — and `UserEventsContractTest`
+  (`krizaka-test-support` `EventContractTest`) checks that the events serialised by the users service conform.
 - The identity outbox implements `krizaka-messaging`'s `OutboxStore.append(NewOutboxMessage)`: a row written by an
   `EventPublisher` keeps its `messageId` and its envelope headers, and the relay publishes them as AMQP headers.
   `IdentityOutboxIT` proves it against the real `identity_outbox` table.
