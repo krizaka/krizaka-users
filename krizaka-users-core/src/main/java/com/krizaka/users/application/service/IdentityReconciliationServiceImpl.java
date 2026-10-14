@@ -1,11 +1,13 @@
 package com.krizaka.users.application.service;
 
+import com.krizaka.users.domain.exception.RegistrationClosedException;
 import com.krizaka.users.domain.model.ExtractedProfile;
 import com.krizaka.users.domain.model.User;
 import com.krizaka.users.domain.ports.inbound.IdentityReconciliationService;
 import com.krizaka.users.domain.ports.outbound.AuthorityRepositoryPort;
 import com.krizaka.users.domain.ports.outbound.OAuth2ProviderVerifier;
 import com.krizaka.users.domain.ports.outbound.UserRepositoryPort;
+import com.krizaka.users.infrastructure.config.IdentityInfrastructureProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,16 +33,19 @@ class IdentityReconciliationServiceImpl implements IdentityReconciliationService
   private final List<OAuth2ProviderVerifier> verifiers;
   private final UserRepositoryPort userRepository;
   private final AuthorityRepositoryPort authorityRepository;
+  private final IdentityInfrastructureProperties properties;
   private final TransactionTemplate transactionTemplate;
 
   IdentityReconciliationServiceImpl(
       List<OAuth2ProviderVerifier> verifiers,
       UserRepositoryPort userRepository,
       AuthorityRepositoryPort authorityRepository,
+      IdentityInfrastructureProperties properties,
       PlatformTransactionManager transactionManager) {
     this.verifiers = verifiers != null ? List.copyOf(verifiers) : List.of();
     this.userRepository = userRepository;
     this.authorityRepository = authorityRepository;
+    this.properties = properties;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
     logger.info(
         "Identity reconciliation service initialized with {} active provider verifier(s)",
@@ -67,6 +72,13 @@ class IdentityReconciliationServiceImpl implements IdentityReconciliationService
             return existingUser.get();
           }
 
+          if (!properties.registration().enabled()) {
+            logger.warn(
+                "Federated sign-in refused for an unknown identity (registration closed):"
+                    + " provider={}",
+                provider);
+            throw new RegistrationClosedException();
+          }
           return provisionFederatedUser(provider, profile);
         });
   }

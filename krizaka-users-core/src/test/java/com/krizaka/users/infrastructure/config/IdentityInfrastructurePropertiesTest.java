@@ -33,10 +33,26 @@ class IdentityInfrastructurePropertiesTest {
   void composedProperties() {
     var ev = new IdentityInfrastructureProperties.EmailVerification(false);
     var inter = new IdentityInfrastructureProperties.Interceptions(false, null);
-    var props = new IdentityInfrastructureProperties(ev, inter, null);
+    var props = new IdentityInfrastructureProperties(ev, inter, null, null);
     assertNotNull(props.emailVerification());
     assertNotNull(props.preferences().reservedPrefixes());
     assertNotNull(props.interceptions());
     assertFalse(props.emailVerification().enabled());
+  }
+
+  @Test
+  @DisplayName("Registration is open when the host does not set it")
+  void registrationOpenByDefault() {
+    var props = new IdentityInfrastructureProperties(null, null, null, null);
+    assertTrue(props.registration().enabled());
+  }
+
+  @Test
+  @DisplayName("Registration can be closed")
+  void registrationClosed() {
+    var props =
+        new IdentityInfrastructureProperties(
+            null, null, null, new IdentityInfrastructureProperties.Registration(false));
+    assertFalse(props.registration().enabled());
   }
 }

@@ -68,6 +68,9 @@ class IdentityServiceImplTest {
     org.mockito.Mockito.lenient()
         .when(properties.preferences())
         .thenReturn(new IdentityInfrastructureProperties.Preferences(java.util.List.of()));
+    org.mockito.Mockito.lenient()
+        .when(properties.registration())
+        .thenReturn(new IdentityInfrastructureProperties.Registration(true));
     service =
         new IdentityServiceImpl(
             userRepository,
@@ -185,6 +188,20 @@ class IdentityServiceImplTest {
     User result = service.updatePreferences(USER_ID.toString(), null);
 
     assertEquals("value", result.preferences().get("key"));
+  }
+
+  @Test
+  void register_registrationClosed_refusesAndCreatesNothing() {
+    when(properties.registration())
+        .thenReturn(new IdentityInfrastructureProperties.Registration(false));
+
+    assertThrows(
+        com.krizaka.users.domain.exception.RegistrationClosedException.class,
+        () -> service.register(USERNAME, EMAIL, TEST_PASSWORD, "en"));
+
+    verify(userRepository, never()).create(any(), any());
+    verify(authorityRepository, never()).saveAuthority(any(), any());
+    verify(cryptography, never()).encodePassword(any());
   }
 
   @Test

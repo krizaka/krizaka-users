@@ -2,6 +2,7 @@ package com.krizaka.users.infrastructure.adapter.rest;
 
 import com.krizaka.users.domain.exception.ApiKeyLimitExceededException;
 import com.krizaka.users.domain.exception.InvalidRequestException;
+import com.krizaka.users.domain.exception.RegistrationClosedException;
 import com.krizaka.users.domain.exception.UserAlreadyExistsException;
 import com.krizaka.users.domain.exception.UserNotFoundException;
 import java.util.Map;
@@ -28,6 +29,13 @@ public class IdentityErrorResolver {
   public ResponseEntity<Map<String, String>> handleUserAlreadyExists(
       UserAlreadyExistsException ex) {
     return errorResponse(HttpStatus.CONFLICT, ex);
+  }
+
+  /** Maps a registration attempt while registration is closed to 403 Forbidden. */
+  @ExceptionHandler(RegistrationClosedException.class)
+  public ResponseEntity<Map<String, String>> handleRegistrationClosed(
+      RegistrationClosedException ex) {
+    return errorResponse(HttpStatus.FORBIDDEN, ex);
   }
 
   /** Maps an exhausted API key allowance to 409 Conflict. */

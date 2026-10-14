@@ -12,7 +12,10 @@ import org.springframework.core.io.Resource;
  */
 @ConfigurationProperties(prefix = "krizaka.users")
 public record IdentityInfrastructureProperties(
-    EmailVerification emailVerification, Interceptions interceptions, Preferences preferences) {
+    EmailVerification emailVerification,
+    Interceptions interceptions,
+    Preferences preferences,
+    Registration registration) {
 
   /** Compact constructor providing null-safe defaults for optional sub-records. */
   public IdentityInfrastructureProperties {
@@ -25,7 +28,19 @@ public record IdentityInfrastructureProperties(
     if (preferences == null) {
       preferences = new Preferences(List.of());
     }
+    if (registration == null) {
+      registration = new Registration(true);
+    }
   }
+
+  /**
+   * Whether new accounts may be created.
+   *
+   * @param enabled {@code false} closes every way an account is created — the register endpoint and
+   *     the first sign-in of an unknown federated (Google/GitHub) identity — while existing
+   *     accounts keep signing in. Open when absent, so a host that never sets it keeps registering.
+   */
+  public record Registration(boolean enabled) {}
 
   /**
    * Settings for the email verification subsystem.
