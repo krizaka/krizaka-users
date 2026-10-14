@@ -142,6 +142,7 @@ A consumer keeps its own copy of the event and checks it against the schema with
 | `krizaka.users.jwt.ttl` | `IDENTITY_JWT_TTL` | `PT12H` |
 | `krizaka.users.crypto.key` / `.salt` | `CRYPTO_KEY` / `CRYPTO_SALT` | — (provider-key encryption) |
 | `krizaka.users.email-verification.enabled` | `EMAIL_VERIFICATION_ENABLED` | `true` |
+| `krizaka.users.registration.enabled` | `AUTH_SIGNUP_ENABLED` | `true` — `false` closes account creation (register → 403, first sign-in of an unknown Google/GitHub identity → 403); existing accounts keep signing in |
 | `krizaka.users-service.datasource.url` | `IDENTITY_DB_URL` | `jdbc:postgresql://localhost:5432/krizaka_users_db` |
 | `krizaka.users-service.datasource.username` / `.password` | `IDENTITY_DB_USERNAME` / `IDENTITY_DB_PASSWORD` | `krizaka_users` / — |
 | `server.port` | `IDENTITY_PORT` | `8083` |

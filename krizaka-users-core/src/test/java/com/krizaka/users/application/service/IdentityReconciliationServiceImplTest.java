@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.krizaka.users.domain.exception.RegistrationClosedException;
 import com.krizaka.users.domain.model.ExtractedProfile;
 import com.krizaka.users.domain.model.Persona;
 import com.krizaka.users.domain.model.User;
 import com.krizaka.users.domain.ports.outbound.AuthorityRepositoryPort;
 import com.krizaka.users.domain.ports.outbound.OAuth2ProviderVerifier;
 import com.krizaka.users.domain.ports.outbound.UserRepositoryPort;
+import com.krizaka.users.infrastructure.config.IdentityInfrastructureProperties;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,21 +33,32 @@ class IdentityReconciliationServiceImplTest {
   @Mock private PlatformTransactionManager transactionManager;
   @Mock private TransactionStatus transactionStatus;
 
+  private static final IdentityInfrastructureProperties OPEN =
+      new IdentityInfrastructureProperties(null, null, null, null);
+  private static final IdentityInfrastructureProperties CLOSED =
+      new IdentityInfrastructureProperties(
+          null, null, null, new IdentityInfrastructureProperties.Registration(false));
+
   private IdentityReconciliationServiceImpl service;
+
+  private IdentityReconciliationServiceImpl closedService() {
+    return new IdentityReconciliationServiceImpl(
+        List.of(googleVerifier), userRepository, authorityRepository, CLOSED, transactionManager);
+  }
 
   @BeforeEach
   void setUp() {
     lenient().when(googleVerifier.supports("google")).thenReturn(true);
     service =
         new IdentityReconciliationServiceImpl(
-            List.of(googleVerifier), userRepository, authorityRepository, transactionManager);
+            List.of(googleVerifier), userRepository, authorityRepository, OPEN, transactionManager);
   }
 
   @Test
   void reconcile_unsupportedProvider_throwsException() {
     IdentityReconciliationServiceImpl emptyService =
         new IdentityReconciliationServiceImpl(
-            List.of(), userRepository, authorityRepository, transactionManager);
+            List.of(), userRepository, authorityRepository, OPEN, transactionManager);
 
     assertThrows(IllegalArgumentException.class, () -> emptyService.reconcile("google", "token"));
   }
@@ -54,7 +67,7 @@ class IdentityReconciliationServiceImplTest {
   void constructor_nullVerifiers_initializesEmpty() {
     IdentityReconciliationServiceImpl nullService =
         new IdentityReconciliationServiceImpl(
-            null, userRepository, authorityRepository, transactionManager);
+            null, userRepository, authorityRepository, OPEN, transactionManager);
 
     assertThrows(IllegalArgumentException.class, () -> nullService.reconcile("google", "token"));
   }
@@ -64,7 +77,11 @@ class IdentityReconciliationServiceImplTest {
     assertDoesNotThrow(
         () ->
             new IdentityReconciliationServiceImpl(
-                List.of(googleVerifier), userRepository, authorityRepository, transactionManager));
+                List.of(googleVerifier),
+                userRepository,
+                authorityRepository,
+                OPEN,
+                transactionManager));
   }
 
   @Test
@@ -137,5 +154,34 @@ class IdentityReconciliationServiceImplTest {
         .thenThrow(new DataIntegrityViolationException("duplicate key"));
 
     assertThrows(IllegalStateException.class, () -> service.reconcile("google", "id-token"));
+  }
+
+  @Test
+  void reconcile_registrationClosed_unknownIdentity_refusesAndCreatesNothing() {
+    ExtractedProfile profile =
+        new ExtractedProfile("test@example.com", "google-id", "Test User", null);
+    when(googleVerifier.verifyAndExtract("id-token")).thenReturn(profile);
+    when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
+    when(userRepository.findByProviderAndProviderId("google", "google-id"))
+        .thenReturn(Optional.empty());
+
+    IdentityReconciliationServiceImpl closed = closedService();
+    assertThrows(RegistrationClosedException.class, () -> closed.reconcile("google", "id-token"));
+
+    verify(userRepository, never()).create(any(), any());
+    verify(authorityRepository, never()).saveAuthority(any(), any());
+  }
+
+  @Test
+  void reconcile_registrationClosed_existingIdentity_stillSignsIn() {
+    ExtractedProfile profile =
+        new ExtractedProfile("test@example.com", "google-id", "Test User", null);
+    User existingUser = Persona.freeUser();
+    when(googleVerifier.verifyAndExtract("id-token")).thenReturn(profile);
+    when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
+    when(userRepository.findByProviderAndProviderId("google", "google-id"))
+        .thenReturn(Optional.of(existingUser));
+
+    assertEquals(existingUser, closedService().reconcile("google", "id-token"));
   }
 }

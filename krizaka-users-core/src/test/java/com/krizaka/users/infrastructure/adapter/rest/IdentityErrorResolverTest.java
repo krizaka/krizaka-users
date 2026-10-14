@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.krizaka.users.domain.exception.ApiKeyLimitExceededException;
 import com.krizaka.users.domain.exception.InvalidRequestException;
+import com.krizaka.users.domain.exception.RegistrationClosedException;
 import com.krizaka.users.domain.exception.UserAlreadyExistsException;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -47,5 +48,16 @@ class IdentityErrorResolverTest {
     assertNotNull(response);
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     assertEquals("Invalid prompt", response.getBody().get("error"));
+  }
+
+  @Test
+  @DisplayName("handleRegistrationClosed returns 403 Forbidden")
+  void handleRegistrationClosed() {
+    ResponseEntity<Map<String, String>> response =
+        resolver.handleRegistrationClosed(new RegistrationClosedException());
+
+    assertNotNull(response);
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals("Registration is closed", response.getBody().get("error"));
   }
 }

@@ -8,6 +8,10 @@ Every Krizaka JVM artifact is released at the same version.
 
 ### Added
 
+- `krizaka.users.registration.enabled` (`AUTH_SIGNUP_ENABLED`, default `true`): `false` closes account creation —
+  `POST /api/v1/auth/register` and the first federated sign-in of an unknown identity answer 403 `Registration is closed`,
+  nothing is written; existing accounts keep signing in. Deployed environments run with it off.
+
 - Event contracts: `krizaka-users-api` publishes the JSON Schema (draft 2020-12) of each event it emits —
   `events/evt.user.registered.v1.json`, `events/evt.password.reset.v1.json` — and `UserEventsContractTest`
   (`krizaka-test-support` `EventContractTest`) checks that the events serialised by the users service conform.

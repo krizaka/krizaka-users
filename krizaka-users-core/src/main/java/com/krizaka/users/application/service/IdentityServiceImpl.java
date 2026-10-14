@@ -3,6 +3,7 @@ package com.krizaka.users.application.service;
 import com.krizaka.users.domain.exception.BadCredentialsException;
 import com.krizaka.users.domain.exception.ConfigurationException;
 import com.krizaka.users.domain.exception.InvalidRequestException;
+import com.krizaka.users.domain.exception.RegistrationClosedException;
 import com.krizaka.users.domain.exception.UserAlreadyExistsException;
 import com.krizaka.users.domain.exception.UserNotFoundException;
 import com.krizaka.users.domain.model.User;
@@ -182,6 +183,10 @@ class IdentityServiceImpl implements IdentityService {
 
   @Override
   public User register(String username, String email, String password, String language) {
+    if (!properties.registration().enabled()) {
+      logger.warn("Registration refused (registration closed)");
+      throw new RegistrationClosedException();
+    }
     String passwordHash = cryptography.encodePassword(password);
     String userId = UUID.randomUUID().toString();
 
