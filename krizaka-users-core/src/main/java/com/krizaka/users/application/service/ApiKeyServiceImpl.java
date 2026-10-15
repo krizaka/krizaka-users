@@ -3,6 +3,7 @@ package com.krizaka.users.application.service;
 import com.krizaka.users.domain.exception.ApiKeyLimitExceededException;
 import com.krizaka.users.domain.exception.InvalidRequestException;
 import com.krizaka.users.domain.model.ApiKey;
+import com.krizaka.users.domain.model.AuthenticatedApiKey;
 import com.krizaka.users.domain.model.GeneratedApiKey;
 import com.krizaka.users.domain.model.User;
 import com.krizaka.users.domain.ports.inbound.ApiKeyService;
@@ -15,6 +16,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,9 @@ class ApiKeyServiceImpl implements ApiKeyService {
   private static final int SECRET_BYTES = 32;
   private static final int DISPLAY_PREFIX_LENGTH = 12;
   private static final int MAX_NAME_LENGTH = 100;
+  private static final int MAX_SCOPES = 8;
+  private static final java.util.regex.Pattern SCOPE_PATTERN =
+      java.util.regex.Pattern.compile("^[a-z][a-z0-9-]{0,23}:[a-z][a-z0-9-]{0,23}$");
 
   private final ApiKeyRepositoryPort apiKeyRepository;
   private final UserRepositoryPort userRepository;
@@ -61,7 +66,13 @@ class ApiKeyServiceImpl implements ApiKeyService {
 
   @Override
   public GeneratedApiKey create(String userId, String name) {
+    return create(userId, name, Set.of());
+  }
+
+  @Override
+  public GeneratedApiKey create(String userId, String name, Set<String> scopes) {
     Objects.requireNonNull(userId, "userId must not be null");
+    Set<String> cleanScopes = normaliseScopes(scopes);
     String cleanName = normaliseName(name);
 
     if (apiKeyRepository.countByUserId(userId) >= MAX_KEYS_PER_USER) {
@@ -77,9 +88,14 @@ class ApiKeyServiceImpl implements ApiKeyService {
     String keyPrefix = plaintext.substring(0, DISPLAY_PREFIX_LENGTH);
     String id = UUID.randomUUID().toString();
 
-    apiKeyRepository.save(id, userId, cleanName, keyPrefix, keyHash);
-    logger.info("Generated API key '{}' ({}) for user {}", cleanName, keyPrefix, userId);
-    return new GeneratedApiKey(id, cleanName, keyPrefix, plaintext);
+    apiKeyRepository.save(id, userId, cleanName, keyPrefix, keyHash, cleanScopes);
+    logger.info(
+        "Generated API key '{}' ({}) for user {} scopes={}",
+        cleanName,
+        keyPrefix,
+        userId,
+        cleanScopes);
+    return new GeneratedApiKey(id, cleanName, keyPrefix, plaintext, cleanScopes);
   }
 
   @Override
@@ -94,7 +110,7 @@ class ApiKeyServiceImpl implements ApiKeyService {
   }
 
   @Override
-  public Optional<User> authenticate(String presentedKey) {
+  public Optional<AuthenticatedApiKey> authenticateKey(String presentedKey) {
     if (presentedKey == null || !presentedKey.startsWith(TOKEN_PREFIX)) {
       return Optional.empty();
     }
@@ -107,7 +123,25 @@ class ApiKeyServiceImpl implements ApiKeyService {
     ApiKey apiKey = match.get();
     Optional<User> user = userRepository.findById(apiKey.userId()).filter(User::enabled);
     user.ifPresent(u -> apiKeyRepository.touchLastUsed(apiKey.id(), Instant.now()));
-    return user;
+    return user.map(u -> new AuthenticatedApiKey(u, apiKey.scopes()));
+  }
+
+  private static Set<String> normaliseScopes(Set<String> scopes) {
+    if (scopes == null || scopes.isEmpty()) {
+      return Set.of();
+    }
+    if (scopes.size() > MAX_SCOPES) {
+      throw new InvalidRequestException("An API key carries at most " + MAX_SCOPES + " scopes");
+    }
+    Set<String> clean = new java.util.TreeSet<>();
+    for (String scope : scopes) {
+      String s = scope == null ? "" : scope.strip();
+      if (!SCOPE_PATTERN.matcher(s).matches()) {
+        throw new InvalidRequestException("Invalid API key scope (expected area:action): " + scope);
+      }
+      clean.add(s);
+    }
+    return Set.copyOf(clean);
   }
 
   private static String normaliseName(String name) {

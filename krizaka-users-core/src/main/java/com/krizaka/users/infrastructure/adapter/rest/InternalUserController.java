@@ -1,7 +1,6 @@
 package com.krizaka.users.infrastructure.adapter.rest;
 
 import com.krizaka.users.domain.model.RateLimitInfo;
-import com.krizaka.users.domain.model.User;
 import com.krizaka.users.domain.model.UserProfile;
 import com.krizaka.users.domain.ports.inbound.ApiKeyService;
 import com.krizaka.users.domain.ports.inbound.IdentityService;
@@ -82,9 +81,13 @@ class InternalUserController {
   @PostMapping("/tokens/exchange")
   public ResponseEntity<TokenExchangeResponse> exchange(@RequestBody TokenExchangeRequest request) {
     return apiKeyService
-        .authenticate(request.apiKey())
-        .filter(User::enabled)
-        .map(user -> ResponseEntity.ok(new TokenExchangeResponse(tokenService.issue(user))))
+        .authenticateKey(request.apiKey())
+        .filter(key -> key.user().enabled())
+        .map(
+            key ->
+                ResponseEntity.ok(
+                    new TokenExchangeResponse(
+                        tokenService.issue(key.user()), key.scopes().stream().sorted().toList())))
         .orElseGet(() -> ResponseEntity.status(401).build());
   }
 

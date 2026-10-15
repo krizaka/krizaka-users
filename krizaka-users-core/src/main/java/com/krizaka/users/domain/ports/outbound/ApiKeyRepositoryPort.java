@@ -44,7 +44,18 @@ public interface ApiKeyRepositoryPort {
    * @param keyPrefix The short display prefix.
    * @param keyHash The SHA-256 hash of the plaintext secret.
    */
-  void save(String id, String userId, String name, String keyPrefix, String keyHash);
+  void save(
+      String id,
+      String userId,
+      String name,
+      String keyPrefix,
+      String keyHash,
+      java.util.Set<String> scopes);
+
+  /** Saves an unscoped key (the full rights of its owner). */
+  default void save(String id, String userId, String name, String keyPrefix, String keyHash) {
+    save(id, userId, name, keyPrefix, keyHash, java.util.Set.of());
+  }
 
   /**
    * Deletes a user's API key, scoped by owner.

@@ -1,6 +1,7 @@
 package com.krizaka.users.domain.ports.inbound;
 
 import com.krizaka.users.domain.model.ApiKey;
+import com.krizaka.users.domain.model.AuthenticatedApiKey;
 import com.krizaka.users.domain.model.GeneratedApiKey;
 import com.krizaka.users.domain.model.User;
 import java.util.List;
@@ -40,6 +41,15 @@ public interface ApiKeyService {
   GeneratedApiKey create(String userId, String name);
 
   /**
+   * Generates a scoped API key: besides authenticating its owner it may only do what its scopes
+   * name (enforced at the edge). A service account's key carries the narrowest scopes it needs.
+   *
+   * @param scopes lowercase {@code area:action} scopes, e.g. {@code ai:embed}; empty = unscoped
+   * @throws com.krizaka.users.domain.exception.InvalidRequestException if a scope is malformed.
+   */
+  GeneratedApiKey create(String userId, String name, java.util.Set<String> scopes);
+
+  /**
    * Revokes (deletes) a user's API key. Scoped by owner so a user can never revoke another's key.
    *
    * @param userId The owning user ID.
@@ -54,5 +64,15 @@ public interface ApiKeyService {
    * @param presentedKey The raw bearer token presented on the request.
    * @return The owning user if the key is valid and the account is enabled; otherwise empty.
    */
-  Optional<User> authenticate(String presentedKey);
+  default Optional<User> authenticate(String presentedKey) {
+    return authenticateKey(presentedKey).map(AuthenticatedApiKey::user);
+  }
+
+  /**
+   * Like {@link #authenticate} but also answers the key's scopes, for the edge's token exchange.
+   *
+   * @param presentedKey The raw bearer token presented on the request.
+   * @return The owner and the key's scopes if the key is valid and the account is enabled.
+   */
+  Optional<AuthenticatedApiKey> authenticateKey(String presentedKey);
 }

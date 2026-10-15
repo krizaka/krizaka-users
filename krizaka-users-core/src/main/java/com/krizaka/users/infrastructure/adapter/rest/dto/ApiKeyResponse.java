@@ -14,12 +14,24 @@ import java.util.Objects;
  * @param lastUsedAt Last authentication instant, or {@code null} if never used.
  */
 public record ApiKeyResponse(
-    String id, String name, String keyPrefix, Instant createdAt, Instant lastUsedAt) {
+    String id,
+    String name,
+    String keyPrefix,
+    Instant createdAt,
+    Instant lastUsedAt,
+    java.util.List<String> scopes) {
 
   public ApiKeyResponse {
     Objects.requireNonNull(id, "id must not be null");
     Objects.requireNonNull(name, "name must not be null");
     Objects.requireNonNull(keyPrefix, "keyPrefix must not be null");
+    scopes = scopes == null ? java.util.List.of() : java.util.List.copyOf(scopes);
+  }
+
+  /** An unscoped key. */
+  public ApiKeyResponse(
+      String id, String name, String keyPrefix, Instant createdAt, Instant lastUsedAt) {
+    this(id, name, keyPrefix, createdAt, lastUsedAt, java.util.List.of());
   }
 
   /**
@@ -30,6 +42,11 @@ public record ApiKeyResponse(
    */
   public static ApiKeyResponse from(ApiKey apiKey) {
     return new ApiKeyResponse(
-        apiKey.id(), apiKey.name(), apiKey.keyPrefix(), apiKey.createdAt(), apiKey.lastUsedAt());
+        apiKey.id(),
+        apiKey.name(),
+        apiKey.keyPrefix(),
+        apiKey.createdAt(),
+        apiKey.lastUsedAt(),
+        apiKey.scopes().stream().sorted().toList());
   }
 }

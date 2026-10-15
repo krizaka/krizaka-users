@@ -34,6 +34,10 @@ public class ApiKeyEntity {
   @Column(name = "key_hash", nullable = false, length = 255)
   private String keyHash;
 
+  /** Comma-separated scopes; empty = unrestricted (every key before scoping existed). */
+  @Column(name = "scopes", nullable = false, length = 255)
+  private String scopes = "";
+
   @Column(name = "created_at")
   private Instant createdAt;
 
@@ -83,6 +87,14 @@ public class ApiKeyEntity {
 
   public void setKeyHash(String keyHash) {
     this.keyHash = keyHash;
+  }
+
+  public String getScopes() {
+    return scopes;
+  }
+
+  public void setScopes(String scopes) {
+    this.scopes = scopes == null ? "" : scopes;
   }
 
   public Instant getCreatedAt() {

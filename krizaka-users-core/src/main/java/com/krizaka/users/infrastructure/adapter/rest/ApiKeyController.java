@@ -43,7 +43,8 @@ public class ApiKeyController {
   @PostMapping
   public ResponseEntity<GeneratedApiKeyResponse> create(
       @RequestBody CreateApiKeyRequest request, @AuthenticationPrincipal User user) {
-    GeneratedApiKey generated = apiKeyService.create(user.id().toString(), request.name());
+    GeneratedApiKey generated =
+        apiKeyService.create(user.id().toString(), request.name(), request.scopes());
     return ResponseEntity.status(HttpStatus.CREATED).body(GeneratedApiKeyResponse.from(generated));
   }
 

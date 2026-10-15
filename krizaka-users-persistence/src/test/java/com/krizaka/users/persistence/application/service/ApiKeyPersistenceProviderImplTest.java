@@ -59,6 +59,32 @@ class ApiKeyPersistenceProviderImplTest {
   }
 
   @Test
+  @DisplayName("scopes round-trip as a sorted comma-separated column; an old row has none")
+  void scopesRoundTrip() {
+    when(repository.save(any(ApiKeyEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+    ApiKeyDto saved =
+        provider.save(
+            new ApiKeyDto(
+                "k",
+                "u",
+                "n",
+                "oz_live_abcd",
+                "h",
+                null,
+                null,
+                java.util.Set.of("ai:embed", "ai:chat")));
+
+    ArgumentCaptor<ApiKeyEntity> captor = ArgumentCaptor.forClass(ApiKeyEntity.class);
+    verify(repository).save(captor.capture());
+    assertThat(captor.getValue().getScopes()).isEqualTo("ai:chat,ai:embed");
+    assertThat(saved.scopes()).containsExactlyInAnyOrder("ai:chat", "ai:embed");
+    assertThat(new ApiKeyEntity().getScopes()).isEmpty();
+    when(repository.findByKeyHash("old")).thenReturn(Optional.of(entity()));
+    assertThat(provider.findByKeyHash("old").orElseThrow().scopes()).isEmpty();
+  }
+
+  @Test
   @DisplayName("countByUserId delegates to the repository")
   void countByUserId() {
     when(repository.countByUserId("user-1")).thenReturn(4L);
