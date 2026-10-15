@@ -60,7 +60,7 @@ class ApiKeyControllerTest {
   void create_returnsCreatedWithPlaintextOnce() {
     GeneratedApiKey generated =
         new GeneratedApiKey("key-1", "CI", "oz_live_abcd", "oz_live_abcdSECRET");
-    when(apiKeyService.create(userId, "CI")).thenReturn(generated);
+    when(apiKeyService.create(userId, "CI", Set.of())).thenReturn(generated);
 
     ResponseEntity<GeneratedApiKeyResponse> response =
         controller.create(new CreateApiKeyRequest("CI"), user);
@@ -68,6 +68,20 @@ class ApiKeyControllerTest {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     assertNotNull(response.getBody());
     assertEquals("oz_live_abcdSECRET", response.getBody().key());
+  }
+
+  @Test
+  void create_passesTheScopesOfAServiceKeyThrough() {
+    GeneratedApiKey generated =
+        new GeneratedApiKey(
+            "key-2", "explorer", "oz_live_wxyz", "oz_live_wxyzSECRET", Set.of("ai:embed"));
+    when(apiKeyService.create(userId, "explorer", Set.of("ai:embed"))).thenReturn(generated);
+
+    ResponseEntity<GeneratedApiKeyResponse> response =
+        controller.create(new CreateApiKeyRequest("explorer", Set.of("ai:embed")), user);
+
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertEquals(java.util.List.of("ai:embed"), response.getBody().scopes());
   }
 
   @Test

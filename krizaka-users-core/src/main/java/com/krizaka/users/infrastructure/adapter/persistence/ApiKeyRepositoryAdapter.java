@@ -45,13 +45,19 @@ class ApiKeyRepositoryAdapter implements ApiKeyRepositoryPort {
   }
 
   @Override
-  public void save(String id, String userId, String name, String keyPrefix, String keyHash) {
+  public void save(
+      String id,
+      String userId,
+      String name,
+      String keyPrefix,
+      String keyHash,
+      java.util.Set<String> scopes) {
     Objects.requireNonNull(id, ID_NULL);
     Objects.requireNonNull(userId, USER_ID_NULL);
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(keyPrefix, "keyPrefix cannot be null");
     Objects.requireNonNull(keyHash, "keyHash cannot be null");
-    provider.save(new ApiKeyDto(id, userId, name, keyPrefix, keyHash, null, null));
+    provider.save(new ApiKeyDto(id, userId, name, keyPrefix, keyHash, null, null, scopes));
   }
 
   @Override
@@ -70,6 +76,12 @@ class ApiKeyRepositoryAdapter implements ApiKeyRepositoryPort {
 
   private static ApiKey toDomain(ApiKeyDto dto) {
     return new ApiKey(
-        dto.id(), dto.userId(), dto.name(), dto.keyPrefix(), dto.createdAt(), dto.lastUsedAt());
+        dto.id(),
+        dto.userId(),
+        dto.name(),
+        dto.keyPrefix(),
+        dto.createdAt(),
+        dto.lastUsedAt(),
+        dto.scopes());
   }
 }

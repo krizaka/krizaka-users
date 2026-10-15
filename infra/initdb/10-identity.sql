@@ -96,6 +96,9 @@ CREATE TABLE api_keys (
     name VARCHAR(100) NOT NULL,
     key_prefix VARCHAR(20) NOT NULL,
     key_hash VARCHAR(255) NOT NULL,
+    -- Comma-separated area:action scopes the edge enforces (e.g. ai:embed); '' = the owner's full
+    -- rights (every key created before scoping existed).
+    scopes VARCHAR(255) NOT NULL DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMP WITH TIME ZONE
 );

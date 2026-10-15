@@ -3,6 +3,7 @@ package com.krizaka.users.persistence.domain.model;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Clean persistence DTO representing an inbound API key row, satisfying ERR-106.
@@ -22,7 +23,8 @@ public record ApiKeyDto(
     String keyPrefix,
     String keyHash,
     Instant createdAt,
-    Instant lastUsedAt)
+    Instant lastUsedAt,
+    Set<String> scopes)
     implements Serializable {
 
   public ApiKeyDto {
@@ -31,5 +33,18 @@ public record ApiKeyDto(
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(keyPrefix, "keyPrefix cannot be null");
     Objects.requireNonNull(keyHash, "keyHash cannot be null");
+    scopes = scopes == null ? Set.of() : Set.copyOf(scopes);
+  }
+
+  /** An unscoped key (full rights of its owner) — the shape every key had before scoping. */
+  public ApiKeyDto(
+      String id,
+      String userId,
+      String name,
+      String keyPrefix,
+      String keyHash,
+      Instant createdAt,
+      Instant lastUsedAt) {
+    this(id, userId, name, keyPrefix, keyHash, createdAt, lastUsedAt, Set.of());
   }
 }

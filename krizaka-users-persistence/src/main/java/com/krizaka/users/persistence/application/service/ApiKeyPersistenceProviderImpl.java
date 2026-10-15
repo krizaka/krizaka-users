@@ -59,6 +59,7 @@ class ApiKeyPersistenceProviderImpl implements ApiKeyPersistenceProvider {
     entity.setKeyHash(apiKeyDto.keyHash());
     entity.setCreatedAt(apiKeyDto.createdAt() != null ? apiKeyDto.createdAt() : Instant.now());
     entity.setLastUsedAt(apiKeyDto.lastUsedAt());
+    entity.setScopes(String.join(",", new java.util.TreeSet<>(apiKeyDto.scopes())));
     return toDto(repository.save(entity));
   }
 
@@ -87,6 +88,17 @@ class ApiKeyPersistenceProviderImpl implements ApiKeyPersistenceProvider {
         entity.getKeyPrefix(),
         entity.getKeyHash(),
         entity.getCreatedAt(),
-        entity.getLastUsedAt());
+        entity.getLastUsedAt(),
+        parseScopes(entity.getScopes()));
+  }
+
+  private static java.util.Set<String> parseScopes(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return java.util.Set.of();
+    }
+    return java.util.Arrays.stream(raw.split(","))
+        .map(String::strip)
+        .filter(x -> !x.isEmpty())
+        .collect(java.util.stream.Collectors.toUnmodifiableSet());
   }
 }

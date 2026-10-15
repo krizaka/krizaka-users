@@ -59,7 +59,60 @@ class ApiKeyServiceImplTest {
     assertThat(generated.plaintext()).startsWith("oz_live_");
     assertThat(generated.keyPrefix()).hasSize(12).isEqualTo(generated.plaintext().substring(0, 12));
     verify(apiKeyRepository)
-        .save(anyString(), eq(USER_ID), eq("CI pipeline"), eq(generated.keyPrefix()), eq("hashed"));
+        .save(
+            anyString(),
+            eq(USER_ID),
+            eq("CI pipeline"),
+            eq(generated.keyPrefix()),
+            eq("hashed"),
+            eq(Set.of()));
+  }
+
+  @Test
+  @DisplayName("create persists the scopes of a service key, sorted and trimmed")
+  void createScoped() {
+    when(apiKeyRepository.countByUserId(USER_ID)).thenReturn(0L);
+    when(cryptography.hashToken(anyString())).thenReturn("hashed");
+
+    GeneratedApiKey generated = service.create(USER_ID, "explorer", Set.of(" ai:embed "));
+
+    assertThat(generated.scopes()).containsExactly("ai:embed");
+    verify(apiKeyRepository)
+        .save(
+            anyString(),
+            eq(USER_ID),
+            eq("explorer"),
+            anyString(),
+            eq("hashed"),
+            eq(Set.of("ai:embed")));
+  }
+
+  @Test
+  @DisplayName("create refuses a malformed scope before generating a secret")
+  void createRejectsMalformedScope() {
+    for (String bad : new String[] {"embed", "AI:embed", "ai:", "ai:embed;drop", "*:*"}) {
+      assertThatThrownBy(() -> service.create(USER_ID, "k", Set.of(bad)))
+          .isInstanceOf(InvalidRequestException.class)
+          .hasMessageContaining("scope");
+    }
+    verify(cryptography, never()).hashToken(anyString());
+  }
+
+  @Test
+  @DisplayName("authenticateKey answers the scopes of the presented key")
+  void authenticateKeyCarriesScopes() {
+    ApiKey match =
+        new ApiKey(
+            "key-1", USER_ID, "svc", "oz_live_abcd", Instant.now(), null, Set.of("ai:embed"));
+    when(cryptography.hashToken("oz_live_secret")).thenReturn("h");
+    when(apiKeyRepository.findByKeyHash("h")).thenReturn(Optional.of(match));
+    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(enabledUser()));
+
+    var result = service.authenticateKey("oz_live_secret");
+
+    assertThat(result).isPresent();
+    assertThat(result.get().scopes()).containsExactly("ai:embed");
+    assertThat(service.authenticate("oz_live_secret")).isPresent();
   }
 
   @Test
@@ -69,7 +122,7 @@ class ApiKeyServiceImplTest {
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageContaining("must not be blank");
     verify(apiKeyRepository, never())
-        .save(anyString(), anyString(), anyString(), anyString(), anyString());
+        .save(anyString(), anyString(), anyString(), anyString(), anyString(), any());
   }
 
   @Test
@@ -81,7 +134,7 @@ class ApiKeyServiceImplTest {
     assertThatThrownBy(() -> service.create(USER_ID, "one more"))
         .isInstanceOf(ApiKeyLimitExceededException.class);
     verify(apiKeyRepository, never())
-        .save(anyString(), anyString(), anyString(), anyString(), anyString());
+        .save(anyString(), anyString(), anyString(), anyString(), anyString(), any());
   }
 
   @Test
