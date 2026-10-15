@@ -36,14 +36,34 @@ public record AuthRateLimitProperties(
         })
         List<String> trustedProxies,
     @DefaultValue("") String clientIpHeader,
-    @DefaultValue({"20", "PT1M"}) Budget login,
-    @DefaultValue({"30", "PT1M"}) Budget oauth,
-    @DefaultValue({"5", "PT1H"}) Budget register,
-    @DefaultValue({"5", "PT1H"}) Budget forgot,
-    @DefaultValue({"10", "PT15M"}) Budget reset,
-    @DefaultValue({"20", "PT1M"}) Budget verify,
-    @DefaultValue({"3", "PT1H"}) Budget emailMessages,
+    @DefaultValue Budget login,
+    @DefaultValue Budget oauth,
+    @DefaultValue Budget register,
+    @DefaultValue Budget forgot,
+    @DefaultValue Budget reset,
+    @DefaultValue Budget verify,
+    @DefaultValue Budget emailMessages,
     @DefaultValue Lockout lockout) {
+
+  /**
+   * A nested value object cannot carry per-field defaults through {@code @DefaultValue} arrays
+   * (Boot then drops the whole properties bean silently), so an unset budget is filled here.
+   */
+  public AuthRateLimitProperties {
+    login = orDefault(login, 20, Duration.ofMinutes(1));
+    oauth = orDefault(oauth, 30, Duration.ofMinutes(1));
+    register = orDefault(register, 5, Duration.ofHours(1));
+    forgot = orDefault(forgot, 5, Duration.ofHours(1));
+    reset = orDefault(reset, 10, Duration.ofMinutes(15));
+    verify = orDefault(verify, 20, Duration.ofMinutes(1));
+    emailMessages = orDefault(emailMessages, 3, Duration.ofHours(1));
+  }
+
+  private static Budget orDefault(Budget given, int requests, Duration window) {
+    int r = given != null && given.requests() > 0 ? given.requests() : requests;
+    Duration w = given != null && given.window() != null ? given.window() : window;
+    return new Budget(r, w);
+  }
 
   /**
    * A budget: {@code requests} per {@code window}.
