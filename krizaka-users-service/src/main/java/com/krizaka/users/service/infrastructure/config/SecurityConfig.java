@@ -148,7 +148,11 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/api-keys/**")
                     .hasAnyAuthority(ADMIN, USER)
                     .requestMatchers("/api/v1/credentials/**")
-                    .hasAnyAuthority(ADMIN, USER))
+                    .hasAnyAuthority(ADMIN, USER)
+                    // The operator console's account administration: administrators only (and
+                    // @PreAuthorize).
+                    .requestMatchers("/api/v1/admin/**")
+                    .hasAuthority(ADMIN))
         .oauth2ResourceServer(
             oauth2 ->
                 oauth2

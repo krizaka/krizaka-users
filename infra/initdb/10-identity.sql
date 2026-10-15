@@ -129,6 +129,20 @@ CREATE UNIQUE INDEX idx_rate_limits_default
 -- Identity transactional outbox (AGENTS.md §6): identity domain events
 -- (evt.user.*, evt.password.*) are appended in the business transaction and
 -- published by the identity relay with message_id as the AMQP messageId.
+-- The administration's append-only audit trail (who did what to which account). Written by the identity
+-- service's admin endpoints; read back at /api/v1/admin/users/audit. No secret, no message: ids and a few words.
+CREATE TABLE admin_audit (
+    id BIGSERIAL PRIMARY KEY,
+    at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actor_id VARCHAR(255),
+    actor_label VARCHAR(255) NOT NULL,
+    action VARCHAR(60) NOT NULL,
+    target_id VARCHAR(255),
+    detail TEXT
+);
+CREATE INDEX idx_admin_audit_at ON admin_audit(at DESC);
+CREATE INDEX idx_admin_audit_target ON admin_audit(target_id);
+
 CREATE TABLE identity_outbox (
     id UUID PRIMARY KEY,
     aggregate_type VARCHAR(100) NOT NULL,

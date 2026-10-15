@@ -1,5 +1,6 @@
 package com.krizaka.users.infrastructure.adapter.rest;
 
+import com.krizaka.users.domain.exception.AdminActionRefusedException;
 import com.krizaka.users.domain.exception.ApiKeyLimitExceededException;
 import com.krizaka.users.domain.exception.InvalidRequestException;
 import com.krizaka.users.domain.exception.RegistrationClosedException;
@@ -46,6 +47,14 @@ public class IdentityErrorResolver {
   }
 
   /** Maps an invalid request to 400 Bad Request. */
+  @ExceptionHandler(AdminActionRefusedException.class)
+  public ResponseEntity<Map<String, String>> handleAdminActionRefused(
+      AdminActionRefusedException ex) {
+    logger.warn("Administrative action refused ({}): {}", ex.code(), ex.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(Map.of("error", ex.getMessage(), "code", ex.code()));
+  }
+
   @ExceptionHandler(InvalidRequestException.class)
   public ResponseEntity<Map<String, String>> handleInvalidRequest(InvalidRequestException ex) {
     return errorResponse(HttpStatus.BAD_REQUEST, ex);

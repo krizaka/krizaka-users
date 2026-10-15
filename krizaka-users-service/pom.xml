@@ -106,6 +106,18 @@
     <build>
         <plugins>
             <plugin>
+                <!-- The deployed service reads its field-encryption key from the environment (CRYPTO_KEY, CRYPTO_SALT):
+                     the context-load test runs with the same names, with throw-away values. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <CRYPTO_KEY>test-crypto-key-0123456789abcdef!</CRYPTO_KEY>
+                        <CRYPTO_SALT>0123456789abcdef</CRYPTO_SALT>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <executions>
