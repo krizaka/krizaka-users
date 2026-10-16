@@ -1,9 +1,11 @@
 package com.krizaka.users.domain.exception;
 
+import java.io.Serial;
+
 /** Exception thrown when cryptographic operations fail or security guardrails are violated. */
 public class SecurityGuardrailException extends RuntimeException {
 
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   /**
    * Constructs a new exception with the specified message and cause.

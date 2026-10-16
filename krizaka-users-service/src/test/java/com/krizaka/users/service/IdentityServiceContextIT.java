@@ -87,10 +87,11 @@ class IdentityServiceContextIT extends AbstractContainerIntegrationTest {
         name + "@example.test");
     jdbc.update(
         "INSERT INTO authorities (user_id, authority_name) VALUES (?, 'ROLE_USER')", id.toString());
-    if (admin)
+    if (admin) {
       jdbc.update(
           "INSERT INTO authorities (user_id, authority_name) VALUES (?, 'ROLE_ADMIN')",
           id.toString());
+    }
     return id;
   }
 
@@ -103,7 +104,9 @@ class IdentityServiceContextIT extends AbstractContainerIntegrationTest {
   private HttpResponse<String> call(String method, String path, String token, String body)
       throws Exception {
     var builder = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
-    if (token != null) builder.header("Authorization", "Bearer " + token);
+    if (token != null) {
+      builder.header("Authorization", "Bearer " + token);
+    }
     builder.header("Content-Type", "application/json");
     builder.method(
         method,

@@ -145,10 +145,10 @@ class ApiKeyServiceImpl implements ApiKeyService {
   }
 
   private static String normaliseName(String name) {
-    String trimmed = (name == null) ? "" : name.strip();
+    String trimmed = name == null ? "" : name.strip();
     if (trimmed.isBlank()) {
       throw new InvalidRequestException("API key name must not be blank");
     }
-    return (trimmed.length() > MAX_NAME_LENGTH) ? trimmed.substring(0, MAX_NAME_LENGTH) : trimmed;
+    return trimmed.length() > MAX_NAME_LENGTH ? trimmed.substring(0, MAX_NAME_LENGTH) : trimmed;
   }
 }

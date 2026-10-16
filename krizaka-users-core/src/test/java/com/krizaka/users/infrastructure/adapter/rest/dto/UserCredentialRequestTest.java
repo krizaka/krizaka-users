@@ -34,7 +34,7 @@ class UserCredentialRequestTest {
   }
 
   @Test
-  void testEqualsHashCodeToString() {
+  void equalsHashCodeToString() {
     var req1 = new UserCredentialRequest("openai", "sk-123");
     var req2 = new UserCredentialRequest("openai", "sk-123");
     var req3 = new UserCredentialRequest("anthropic", "sk-456");

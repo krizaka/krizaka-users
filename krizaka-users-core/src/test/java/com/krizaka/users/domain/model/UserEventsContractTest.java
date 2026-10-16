@@ -1,6 +1,7 @@
 package com.krizaka.users.domain.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.krizaka.test.events.EventContractTest;
 import java.util.List;
@@ -33,12 +34,20 @@ class UserEventsContractTest extends EventContractTest {
 
   @Test
   void userRegisteredWithoutAToken() {
-    assertConforms("evt.user.registered", 1, new UserRegisteredEvent(USER, null));
+    assertDoesNotThrow(
+        () -> {
+          assertConforms("evt.user.registered", 1, new UserRegisteredEvent(USER, null));
+        });
   }
 
   @Test
   void passwordReset() {
-    assertConforms(
-        "evt.password.reset", 1, new PasswordResetRequestedEvent("ada@example.com", "reset-me"));
+    assertDoesNotThrow(
+        () -> {
+          assertConforms(
+              "evt.password.reset",
+              1,
+              new PasswordResetRequestedEvent("ada@example.com", "reset-me"));
+        });
   }
 }

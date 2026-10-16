@@ -33,7 +33,7 @@ public record OutboxMessage(
     requireNonBlank(exchange, "exchange");
     requireNonBlank(routingKey, "routingKey");
     Objects.requireNonNull(payload, "payload cannot be null");
-    headers = (headers != null) ? Map.copyOf(headers) : Map.of();
+    headers = headers != null ? Map.copyOf(headers) : Map.of();
   }
 
   /**

@@ -40,8 +40,8 @@ class UserCredentialAdapterTest {
     List<UserCredential> result = adapter.findByUserId("user-1");
 
     assertThat(result).hasSize(1);
-    assertThat(result.get(0).providerName()).isEqualTo("OPENAI");
-    assertThat(result.get(0).configured()).isTrue();
+    assertThat(result.getFirst().providerName()).isEqualTo("OPENAI");
+    assertThat(result.getFirst().configured()).isTrue();
     verify(provider).findByUserId("user-1");
   }
 
@@ -85,9 +85,9 @@ class UserCredentialAdapterTest {
         .save(
             argThat(
                 dto ->
-                    dto.userId().equals("user-1")
-                        && dto.providerName().equals("OPENAI")
-                        && dto.apiKey().equals("key-123")));
+                    "user-1".equals(dto.userId())
+                        && "OPENAI".equals(dto.providerName())
+                        && "key-123".equals(dto.apiKey())));
   }
 
   @Test

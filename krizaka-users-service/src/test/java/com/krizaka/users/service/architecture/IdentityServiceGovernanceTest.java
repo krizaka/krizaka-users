@@ -1,5 +1,7 @@
 package com.krizaka.users.service.architecture;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import com.krizaka.test.architecture.ConfigBindingRules;
 import com.krizaka.test.architecture.SourceRules;
 import java.nio.file.Path;
@@ -21,13 +23,19 @@ class IdentityServiceGovernanceTest {
   @DisplayName(
       "[CFG-001] every type the configuration binder builds has a constructor it can choose")
   void configurationBindsUnambiguously() {
-    ConfigBindingRules.assertConfigurationBindsUnambiguously("com.krizaka");
-    ConfigBindingRules.assertInjectableComponentsHaveOneConstructor("com.krizaka");
+    assertDoesNotThrow(
+        () -> {
+          ConfigBindingRules.assertConfigurationBindsUnambiguously("com.krizaka");
+          ConfigBindingRules.assertInjectableComponentsHaveOneConstructor("com.krizaka");
+        });
   }
 
   @Test
   @DisplayName("[ERR-113] No Environment injection in production beans")
   void noEnvironmentInjection() {
-    SourceRules.assertNoEnvironmentInjection(Path.of("src", "main", "java"));
+    assertDoesNotThrow(
+        () -> {
+          SourceRules.assertNoEnvironmentInjection(Path.of("src", "main", "java"));
+        });
   }
 }

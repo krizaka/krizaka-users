@@ -54,8 +54,8 @@ class ApiKeyPersistenceProviderImplTest {
     List<ApiKeyDto> result = provider.findByUserId("user-1");
 
     assertThat(result).hasSize(1);
-    assertThat(result.get(0).id()).isEqualTo("key-1");
-    assertThat(result.get(0).keyPrefix()).isEqualTo("oz_live_abcd");
+    assertThat(result.getFirst().id()).isEqualTo("key-1");
+    assertThat(result.getFirst().keyPrefix()).isEqualTo("oz_live_abcd");
   }
 
   @Test

@@ -62,7 +62,7 @@ class GithubProviderVerifier extends AbstractProviderVerifier {
       email = login + "@users.noreply.github.com";
     }
 
-    String displayName = (name != null && !name.isBlank()) ? name : login;
+    String displayName = name != null && !name.isBlank() ? name : login;
 
     return new ExtractedProfile(email, id, displayName, avatarUrl);
   }

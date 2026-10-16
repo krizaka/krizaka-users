@@ -27,7 +27,7 @@ class AbstractProviderVerifierTest {
   }
 
   @Test
-  void testSupports() {
+  void supports() {
     DummyProviderVerifier verifier = new DummyProviderVerifier();
     assertThat(verifier.supports("dummy")).isTrue();
     assertThat(verifier.supports("DUMMY")).isTrue();
@@ -35,7 +35,7 @@ class AbstractProviderVerifierTest {
   }
 
   @Test
-  void testVerifyAndExtractValid() {
+  void verifyAndExtractValid() {
     DummyProviderVerifier verifier = new DummyProviderVerifier();
     ExtractedProfile profile = verifier.verifyAndExtract("valid-token");
     assertThat(profile).isNotNull();
@@ -46,7 +46,7 @@ class AbstractProviderVerifierTest {
   }
 
   @Test
-  void testVerifyAndExtractInvalid() {
+  void verifyAndExtractInvalid() {
     DummyProviderVerifier verifier = new DummyProviderVerifier();
     assertThatThrownBy(() -> verifier.verifyAndExtract(null))
         .isInstanceOf(IllegalArgumentException.class)
@@ -58,14 +58,14 @@ class AbstractProviderVerifierTest {
   }
 
   @Test
-  void testGithubProviderVerifier_supports() {
+  void githubProviderVerifierSupports() {
     GithubProviderVerifier verifier = new GithubProviderVerifier(RestClient.create());
     assertThat(verifier.supports("github")).isTrue();
     assertThat(verifier.tokenLabel()).isEqualTo("GitHub access token");
   }
 
   @Test
-  void testGoogleProviderVerifier_supports() {
+  void googleProviderVerifierSupports() {
     GoogleProviderVerifier verifier =
         new GoogleProviderVerifier(RestClient.create(), new tools.jackson.databind.ObjectMapper());
     assertThat(verifier.supports("google")).isTrue();

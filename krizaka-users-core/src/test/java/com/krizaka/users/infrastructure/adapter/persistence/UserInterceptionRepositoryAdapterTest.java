@@ -40,7 +40,7 @@ class UserInterceptionRepositoryAdapterTest {
             argThat(
                 dto ->
                     dto.userId().equals(userId.toString())
-                        && dto.interceptionType().equals("REFINER")),
+                        && "REFINER".equals(dto.interceptionType())),
             eq("schema-1"));
   }
 

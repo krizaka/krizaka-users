@@ -89,14 +89,17 @@ class PasswordRecoveryServiceImplTest {
 
   @Test
   void requestPasswordReset_purgesExistingTokensBeforeSaving() {
-    when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(stubUser()));
-    when(cryptography.hashToken(anyString())).thenReturn("hash123456789012");
+    assertDoesNotThrow(
+        () -> {
+          when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(stubUser()));
+          when(cryptography.hashToken(anyString())).thenReturn("hash123456789012");
 
-    service.requestPasswordReset(EMAIL);
+          service.requestPasswordReset(EMAIL);
 
-    var inOrder = inOrder(tokenRepository);
-    inOrder.verify(tokenRepository).deleteByEmail(EMAIL);
-    inOrder.verify(tokenRepository).save(any(PasswordResetToken.class));
+          var inOrder = inOrder(tokenRepository);
+          inOrder.verify(tokenRepository).deleteByEmail(EMAIL);
+          inOrder.verify(tokenRepository).save(any(PasswordResetToken.class));
+        });
   }
 
   @Test
@@ -190,19 +193,22 @@ class PasswordRecoveryServiceImplTest {
 
   @Test
   void resetPassword_bcryptExecutedBeforeDbUpdate() {
-    String tokenId = UUID.randomUUID().toString();
-    PasswordResetToken token =
-        new PasswordResetToken(tokenId, EMAIL, "hash", Instant.parse("2099-01-01T00:00:00Z"));
+    assertDoesNotThrow(
+        () -> {
+          String tokenId = UUID.randomUUID().toString();
+          PasswordResetToken token =
+              new PasswordResetToken(tokenId, EMAIL, "hash", Instant.parse("2099-01-01T00:00:00Z"));
 
-    when(cryptography.hashToken("token")).thenReturn("hash");
-    when(tokenRepository.findByTokenHash("hash")).thenReturn(Optional.of(token));
-    when(cryptography.encodePassword("ValidPass123")).thenReturn("bcrypt_result");
+          when(cryptography.hashToken("token")).thenReturn("hash");
+          when(tokenRepository.findByTokenHash("hash")).thenReturn(Optional.of(token));
+          when(cryptography.encodePassword("ValidPass123")).thenReturn("bcrypt_result");
 
-    service.resetPassword("token", "ValidPass123");
+          service.resetPassword("token", "ValidPass123");
 
-    var inOrder = inOrder(cryptography, userRepository, tokenRepository);
-    inOrder.verify(cryptography).encodePassword("ValidPass123");
-    inOrder.verify(userRepository).updatePasswordHashByEmail(EMAIL, "bcrypt_result");
-    inOrder.verify(tokenRepository).deleteById(tokenId);
+          var inOrder = inOrder(cryptography, userRepository, tokenRepository);
+          inOrder.verify(cryptography).encodePassword("ValidPass123");
+          inOrder.verify(userRepository).updatePasswordHashByEmail(EMAIL, "bcrypt_result");
+          inOrder.verify(tokenRepository).deleteById(tokenId);
+        });
   }
 }

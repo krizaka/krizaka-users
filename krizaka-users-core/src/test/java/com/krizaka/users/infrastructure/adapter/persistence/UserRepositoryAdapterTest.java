@@ -121,7 +121,7 @@ class UserRepositoryAdapterTest {
         .save(
             argThat(
                 dto ->
-                    dto.passwordHash().equals("password-hash") && dto.provider().equals("local")));
+                    "password-hash".equals(dto.passwordHash()) && "local".equals(dto.provider())));
   }
 
   @Test

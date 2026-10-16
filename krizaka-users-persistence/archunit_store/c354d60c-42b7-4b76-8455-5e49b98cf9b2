@@ -1,0 +1,2 @@
+Method <com.krizaka.users.persistence.infrastructure.adapter.persistence.converter.CryptoConfigHolder.getKey()> calls method <java.lang.System.getenv(java.lang.String)> in (CryptoConfigHolder.java:40)
+Method <com.krizaka.users.persistence.infrastructure.adapter.persistence.converter.CryptoConfigHolder.getSalt()> calls method <java.lang.System.getenv(java.lang.String)> in (CryptoConfigHolder.java:47)

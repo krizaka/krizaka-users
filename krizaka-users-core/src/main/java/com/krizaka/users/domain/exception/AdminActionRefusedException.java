@@ -1,12 +1,14 @@
 package com.krizaka.users.domain.exception;
 
+import java.io.Serial;
+
 /**
  * An administrative action the rules refuse (your own account, the last administrator, a mismatched
  * confirmation).
  */
 public class AdminActionRefusedException extends RuntimeException {
 
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   private final String code;
 

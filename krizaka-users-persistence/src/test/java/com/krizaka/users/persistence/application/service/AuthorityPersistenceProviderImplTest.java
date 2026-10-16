@@ -3,9 +3,7 @@ package com.krizaka.users.persistence.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.krizaka.users.persistence.domain.model.AuthorityDto;
 import com.krizaka.users.persistence.infrastructure.adapter.persistence.entity.AuthorityEntity;
@@ -26,20 +24,20 @@ class AuthorityPersistenceProviderImplTest {
   }
 
   @Test
-  void testConstructorNullCheck() {
+  void constructorNullCheck() {
     assertThatThrownBy(() -> new AuthorityPersistenceProviderImpl(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("AuthorityRepository cannot be null");
   }
 
   @Test
-  void testSaveAuthority() {
+  void saveAuthority() {
     provider.saveAuthority("user123", "ROLE_ADMIN");
     verify(repository).save(any(AuthorityEntity.class));
   }
 
   @Test
-  void testSaveAuthorityNullChecks() {
+  void saveAuthorityNullChecks() {
     assertThatThrownBy(() -> provider.saveAuthority(null, "ROLE_ADMIN"))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("UserId cannot be null");
@@ -50,7 +48,7 @@ class AuthorityPersistenceProviderImplTest {
   }
 
   @Test
-  void testFindByUserId() {
+  void findByUserId() {
     AuthorityEntity entity = new AuthorityEntity();
     entity.setId(1L);
     entity.setUserId("user123");
@@ -60,12 +58,12 @@ class AuthorityPersistenceProviderImplTest {
 
     List<AuthorityDto> result = provider.findByUserId("user123");
     assertThat(result).hasSize(1);
-    assertThat(result.get(0).userId()).isEqualTo("user123");
-    assertThat(result.get(0).authorityName()).isEqualTo("ROLE_ADMIN");
+    assertThat(result.getFirst().userId()).isEqualTo("user123");
+    assertThat(result.getFirst().authorityName()).isEqualTo("ROLE_ADMIN");
   }
 
   @Test
-  void testFindByUserIdNullCheck() {
+  void findByUserIdNullCheck() {
     assertThatThrownBy(() -> provider.findByUserId(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("UserId cannot be null");

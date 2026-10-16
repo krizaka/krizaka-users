@@ -24,7 +24,7 @@ class UserCredentialResponseTest {
   }
 
   @Test
-  void testEqualsHashCodeToString() {
+  void equalsHashCodeToString() {
     var resp1 = new UserCredentialResponse("openai", true);
     var resp2 = new UserCredentialResponse("openai", true);
     var resp3 = new UserCredentialResponse("anthropic", false);

@@ -1,5 +1,7 @@
 package com.krizaka.users.domain.exception;
 
+import java.io.Serial;
+
 /**
  * Thrown when credential-based authentication fails due to invalid email or password.
  *
@@ -8,7 +10,7 @@ package com.krizaka.users.domain.exception;
  */
 public class BadCredentialsException extends RuntimeException {
 
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   public BadCredentialsException(String message) {
     super(message);

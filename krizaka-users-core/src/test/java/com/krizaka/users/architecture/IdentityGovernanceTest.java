@@ -1,6 +1,7 @@
 package com.krizaka.users.architecture;
 
 import static com.krizaka.test.architecture.CodeRules.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.krizaka.test.architecture.SourceRules;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -32,48 +33,66 @@ class IdentityGovernanceTest {
   @Test
   @DisplayName("[ERR-103] One top-level class per file")
   void oneClassPerFile() {
-    assertOneTopLevelClassPerFile(identityClasses, PKG);
+    assertDoesNotThrow(
+        () -> {
+          assertOneTopLevelClassPerFile(identityClasses, PKG);
+        });
   }
 
   @Test
   @DisplayName("[ERR-104] No redundant 'Krizaka' prefix")
   void noRedundantPrefix() {
-    assertNoProductPrefix(identityClasses, PKG, "Krizaka");
+    assertDoesNotThrow(
+        () -> {
+          assertNoProductPrefix(identityClasses, PKG, "Krizaka");
+        });
   }
 
   @Test
   @DisplayName("[ERR-107] Mapper classes are final and package-private")
   void mappersAreFinalAndPackagePrivate() {
-    assertMappersFinal(identityClasses, PKG);
-    assertMappersPackagePrivate(identityClasses, PKG);
+    assertDoesNotThrow(
+        () -> {
+          assertMappersFinal(identityClasses, PKG);
+          assertMappersPackagePrivate(identityClasses, PKG);
+        });
   }
 
   @Test
   @DisplayName("[ERR-112] Web controllers only in the segregated REST ingress adapter")
   void webControllersOnlyInRestAdapter() {
-    // Strangler-fig Phase 2: the identity context owns its REST ingress
-    // (auth/profile/api-keys/credentials) — hosted by the identity service and,
-    // during the dual-run window, by the router. Controllers stay segregated in
-    // infrastructure.adapter.rest per ERR-112; anywhere else remains banned.
-    com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes()
-        .that()
-        .areAnnotatedWith(org.springframework.web.bind.annotation.RestController.class)
-        .should()
-        .resideInAPackage(PKG + ".infrastructure.adapter.rest..")
-        .because("The identity REST ingress is segregated in its adapter package [ERR-112]")
-        .check(identityClasses);
+    assertDoesNotThrow(
+        () -> {
+          // Strangler-fig Phase 2: the identity context owns its REST ingress
+          // (auth/profile/api-keys/credentials) — hosted by the identity service and,
+          // during the dual-run window, by the router. Controllers stay segregated in
+          // infrastructure.adapter.rest per ERR-112; anywhere else remains banned.
+          com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes()
+              .that()
+              .areAnnotatedWith(org.springframework.web.bind.annotation.RestController.class)
+              .should()
+              .resideInAPackage(PKG + ".infrastructure.adapter.rest..")
+              .because("The identity REST ingress is segregated in its adapter package [ERR-112]")
+              .check(identityClasses);
+        });
   }
 
   @Test
   @DisplayName("[ERR-130] Domain holds no transport DTOs (*Request/*Response)")
   void domainHasNoTransportDtos() {
-    assertDomainHasNoTransportDtos(identityClasses, PKG + ".domain");
+    assertDoesNotThrow(
+        () -> {
+          assertDomainHasNoTransportDtos(identityClasses, PKG + ".domain");
+        });
   }
 
   @Test
   @DisplayName("[HEX-002] Domain layer is framework-free (no Spring/JPA/Jackson)")
   void domainPurity() {
-    assertDomainPurity(identityClasses, PKG);
+    assertDoesNotThrow(
+        () -> {
+          assertDomainPurity(identityClasses, PKG);
+        });
   }
 
   // GOV-006: [ERR-130] support-package hygiene is not invoked here: this module has no
@@ -82,36 +101,54 @@ class IdentityGovernanceTest {
   @Test
   @DisplayName("[ERR-130] adapter/persistence holds only *Adapter/*Mapper")
   void persistenceAdapterPackageKind() {
-    assertPersistenceAdapterPackageKind(identityClasses, PKG);
+    assertDoesNotThrow(
+        () -> {
+          assertPersistenceAdapterPackageKind(identityClasses, PKG);
+        });
   }
 
   @Test
   @DisplayName("[ADR-009] Instance fields in concrete classes are private")
   void fieldsArePrivate() {
-    assertFieldsPrivate(identityClasses);
+    assertDoesNotThrow(
+        () -> {
+          assertFieldsPrivate(identityClasses);
+        });
   }
 
   @Test
   @DisplayName("[ADR-007] Collection fields are private final")
   void collectionFieldsPrivateFinal() {
-    assertCollectionFieldsPrivateFinal(identityClasses);
+    assertDoesNotThrow(
+        () -> {
+          assertCollectionFieldsPrivateFinal(identityClasses);
+        });
   }
 
   @Test
   @DisplayName("[GOV-001] No anonymous classes in production")
   void noAnonymousClasses() {
-    assertNoAnonymousClasses(identityClasses, PKG);
+    assertDoesNotThrow(
+        () -> {
+          assertNoAnonymousClasses(identityClasses, PKG);
+        });
   }
 
   @Test
   @DisplayName("[GOV-004] No standard streams (use SLF4J)")
   void noStandardStreams() {
-    assertNoStandardStreams(identityClasses);
+    assertDoesNotThrow(
+        () -> {
+          assertNoStandardStreams(identityClasses);
+        });
   }
 
   @Test
   @DisplayName("[ERR-113] No Environment injection in production beans")
   void noEnvironmentInjection() {
-    SourceRules.assertNoEnvironmentInjection(Path.of("src", "main", "java"));
+    assertDoesNotThrow(
+        () -> {
+          SourceRules.assertNoEnvironmentInjection(Path.of("src", "main", "java"));
+        });
   }
 }

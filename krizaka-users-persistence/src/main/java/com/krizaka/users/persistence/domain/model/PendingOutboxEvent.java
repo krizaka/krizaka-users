@@ -29,10 +29,10 @@ public record PendingOutboxEvent(
     Objects.requireNonNull(exchange, "exchange cannot be null");
     Objects.requireNonNull(routingKey, "routingKey cannot be null");
     Objects.requireNonNull(messageId, "messageId cannot be null");
-    payload = (payload != null) ? Map.copyOf(payload) : Map.of();
+    payload = payload != null ? Map.copyOf(payload) : Map.of();
     if (attempts < 0) {
       throw new IllegalArgumentException("attempts cannot be negative");
     }
-    headers = (headers != null) ? Map.copyOf(headers) : Map.of();
+    headers = headers != null ? Map.copyOf(headers) : Map.of();
   }
 }
