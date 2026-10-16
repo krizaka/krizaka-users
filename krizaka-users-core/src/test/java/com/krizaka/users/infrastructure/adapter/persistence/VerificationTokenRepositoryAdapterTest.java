@@ -47,10 +47,10 @@ class VerificationTokenRepositoryAdapterTest {
         .save(
             argThat(
                 dto ->
-                    dto.id().equals("token-1")
-                        && dto.userId().equals("user-1")
-                        && dto.tokenType().equals("EMAIL_VERIFICATION")
-                        && dto.tokenHash().equals("hash-1")
+                    "token-1".equals(dto.id())
+                        && "user-1".equals(dto.userId())
+                        && "EMAIL_VERIFICATION".equals(dto.tokenType())
+                        && "hash-1".equals(dto.tokenHash())
                         && dto.expiryTimestamp().equals(now)
                         && !dto.used()));
   }

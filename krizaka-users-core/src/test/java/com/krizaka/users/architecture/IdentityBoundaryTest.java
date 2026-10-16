@@ -1,9 +1,8 @@
 package com.krizaka.users.architecture;
 
 import static com.krizaka.users.TestConstants.*;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -33,41 +32,51 @@ class IdentityBoundaryTest {
   @Test
   @DisplayName("[ERR-102] Users depends on no product")
   void usersDependsOnNoProduct() {
-    noClasses()
-        .that()
-        .resideInAPackage(PKG_IDENTITY)
-        .should()
-        .dependOnClassesThat()
-        .resideInAnyPackage("com.krizaka.orazaka..", "com.orazaka..", "com.orochia..")
-        .because("a Krizaka building block depends on no product — products depend on it")
-        .check(identityClasses);
+    assertDoesNotThrow(
+        () -> {
+          noClasses()
+              .that()
+              .resideInAPackage(PKG_IDENTITY)
+              .should()
+              .dependOnClassesThat()
+              .resideInAnyPackage("com.krizaka.orazaka..", "com.orazaka..", "com.orochia..")
+              .because("a Krizaka building block depends on no product — products depend on it")
+              .check(identityClasses);
+        });
   }
 
   @Test
   @DisplayName("[ERR-106] No field injection in identity classes")
   void noFieldInjection() {
-    noFields()
-        .that()
-        .areDeclaredInClassesThat()
-        .resideInAPackage(PKG_IDENTITY)
-        .should()
-        .beAnnotatedWith(org.springframework.beans.factory.annotation.Autowired.class)
-        .because("Field injection is prohibited — constructor-based DI is mandatory [ADR-012]")
-        .check(identityClasses);
+    assertDoesNotThrow(
+        () -> {
+          noFields()
+              .that()
+              .areDeclaredInClassesThat()
+              .resideInAPackage(PKG_IDENTITY)
+              .should()
+              .beAnnotatedWith(org.springframework.beans.factory.annotation.Autowired.class)
+              .because(
+                  "Field injection is prohibited — constructor-based DI is mandatory [ADR-012]")
+              .check(identityClasses);
+        });
   }
 
   @Test
   @DisplayName("[ERR-102] Service implementations must not be public")
   void serviceImplNotPublic() {
-    classes()
-        .that()
-        .resideInAPackage("com.krizaka.users.application.service..")
-        .and()
-        .haveSimpleNameEndingWith("Impl")
-        .should()
-        .notBePublic()
-        .because(
-            "Service implementations are package-private — only interfaces are public [Ports & Adapters]")
-        .check(identityClasses);
+    assertDoesNotThrow(
+        () -> {
+          classes()
+              .that()
+              .resideInAPackage("com.krizaka.users.application.service..")
+              .and()
+              .haveSimpleNameEndingWith("Impl")
+              .should()
+              .notBePublic()
+              .because(
+                  "Service implementations are package-private — only interfaces are public [Ports & Adapters]")
+              .check(identityClasses);
+        });
   }
 }

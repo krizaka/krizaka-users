@@ -21,6 +21,6 @@ public record UserProfile(String userId, String theme, Map<String, Object> attri
   public UserProfile {
     Objects.requireNonNull(userId, "userId must not be null");
     Objects.requireNonNull(theme, "theme must not be null");
-    attributes = (attributes == null) ? Map.of() : Map.copyOf(attributes);
+    attributes = attributes == null ? Map.of() : Map.copyOf(attributes);
   }
 }

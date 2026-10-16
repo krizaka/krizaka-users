@@ -2,9 +2,7 @@ package com.krizaka.users.persistence.infrastructure.adapter.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.krizaka.messaging.outbox.NewOutboxMessage;
 import com.krizaka.messaging.outbox.OutboxMessage;
@@ -41,7 +39,7 @@ class RelayOutboxStoreAdapterTest {
                     2,
                     Map.of("kz-type", "evt.user.registered"))));
 
-    OutboxMessage relayed = adapter.lockPendingBatch(10).get(0);
+    OutboxMessage relayed = adapter.lockPendingBatch(10).getFirst();
 
     assertThat(relayed.id()).isEqualTo(id);
     assertThat(relayed.exchange()).isEqualTo("platform.events");

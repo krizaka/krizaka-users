@@ -45,7 +45,7 @@ class UserCredentialPersistenceProviderImplTest {
     List<UserCredentialDto> result = provider.findByUserId("user-1");
 
     assertThat(result).hasSize(1);
-    assertThat(result.get(0).apiKey()).isEqualTo("key-123");
+    assertThat(result.getFirst().apiKey()).isEqualTo("key-123");
   }
 
   @Test

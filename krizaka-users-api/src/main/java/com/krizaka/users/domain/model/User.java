@@ -43,15 +43,15 @@ public record User(
     if (email == null || email.isBlank()) {
       throw new IllegalArgumentException("Email cannot be empty");
     }
-    authorities = (authorities == null) ? Set.of() : Set.copyOf(authorities);
+    authorities = authorities == null ? Set.of() : Set.copyOf(authorities);
 
     Map<String, Object> tempPrefs =
-        (preferences == null) ? new HashMap<>() : new HashMap<>(preferences);
-    tempPrefs.compute("language", (k, v) -> (v == null || String.valueOf(v).isBlank()) ? "en" : v);
+        preferences == null ? new HashMap<>() : new HashMap<>(preferences);
+    tempPrefs.compute("language", (k, v) -> v == null || String.valueOf(v).isBlank() ? "en" : v);
     preferences = Map.copyOf(tempPrefs);
 
     activeInterceptions =
-        (activeInterceptions == null) ? List.of() : List.copyOf(activeInterceptions);
+        activeInterceptions == null ? List.of() : List.copyOf(activeInterceptions);
   }
 
   /**

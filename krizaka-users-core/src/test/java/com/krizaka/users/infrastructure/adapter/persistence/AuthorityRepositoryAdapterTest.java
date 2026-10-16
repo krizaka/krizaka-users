@@ -10,14 +10,14 @@ import org.junit.jupiter.api.Test;
 class AuthorityRepositoryAdapterTest {
 
   @Test
-  void testConstructorNullCheck() {
+  void constructorNullCheck() {
     assertThatThrownBy(() -> new AuthorityRepositoryAdapter(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("AuthorityPersistenceProvider cannot be null");
   }
 
   @Test
-  void testSaveAuthority() {
+  void saveAuthority() {
     AuthorityPersistenceProvider provider = mock(AuthorityPersistenceProvider.class);
     AuthorityRepositoryAdapter adapter = new AuthorityRepositoryAdapter(provider);
 
@@ -27,7 +27,7 @@ class AuthorityRepositoryAdapterTest {
   }
 
   @Test
-  void testSaveAuthorityNullChecks() {
+  void saveAuthorityNullChecks() {
     AuthorityPersistenceProvider provider = mock(AuthorityPersistenceProvider.class);
     AuthorityRepositoryAdapter adapter = new AuthorityRepositoryAdapter(provider);
 

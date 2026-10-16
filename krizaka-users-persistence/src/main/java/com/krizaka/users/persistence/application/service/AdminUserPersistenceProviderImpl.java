@@ -70,8 +70,10 @@ class AdminUserPersistenceProviderImpl implements AdminUserPersistenceProvider {
   public Optional<AdminUserRow> find(String id) {
     List<Object[]> rows =
         em.createNativeQuery(SELECT + " WHERE u.id = :id").setParameter("id", id).getResultList();
-    if (rows.isEmpty()) return Optional.empty();
-    return Optional.of(toRow(rows.get(0), authoritiesOf(List.of(id)).get(id)));
+    if (rows.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(toRow(rows.getFirst(), authoritiesOf(List.of(id)).get(id)));
   }
 
   @Override
@@ -141,7 +143,9 @@ class AdminUserPersistenceProviderImpl implements AdminUserPersistenceProvider {
                     + where
                     + " ORDER BY at DESC, id DESC LIMIT :limit")
             .setParameter("limit", limit);
-    if (targetId != null) query.setParameter("t", targetId);
+    if (targetId != null) {
+      query.setParameter("t", targetId);
+    }
     List<Object[]> rows = query.getResultList();
     return rows.stream()
         .map(
@@ -167,7 +171,9 @@ class AdminUserPersistenceProviderImpl implements AdminUserPersistenceProvider {
 
   @SuppressWarnings("unchecked")
   private Map<String, Set<String>> authoritiesOf(List<String> ids) {
-    if (ids.isEmpty()) return Map.of();
+    if (ids.isEmpty()) {
+      return Map.of();
+    }
     List<Object[]> rows =
         em.createNativeQuery(
                 "SELECT user_id, authority_name FROM authorities WHERE user_id IN (:ids)")
@@ -192,10 +198,18 @@ class AdminUserPersistenceProviderImpl implements AdminUserPersistenceProvider {
   }
 
   private static Instant instant(Object value) {
-    if (value == null) return null;
-    if (value instanceof Instant i) return i;
-    if (value instanceof Timestamp t) return t.toInstant();
-    if (value instanceof java.time.OffsetDateTime o) return o.toInstant();
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof Instant i) {
+      return i;
+    }
+    if (value instanceof Timestamp t) {
+      return t.toInstant();
+    }
+    if (value instanceof java.time.OffsetDateTime o) {
+      return o.toInstant();
+    }
     return Instant.parse(value.toString());
   }
 }

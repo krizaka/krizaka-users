@@ -52,8 +52,8 @@ class ApiKeyControllerTest {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
     assertEquals(1, response.getBody().size());
-    assertEquals("CI", response.getBody().get(0).name());
-    assertEquals("oz_live_abcd", response.getBody().get(0).keyPrefix());
+    assertEquals("CI", response.getBody().getFirst().name());
+    assertEquals("oz_live_abcd", response.getBody().getFirst().keyPrefix());
   }
 
   @Test

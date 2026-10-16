@@ -57,7 +57,7 @@ abstract class AbstractProviderVerifier implements OAuth2ProviderVerifier {
    */
   protected static String textOrNull(JsonNode node, String field) {
     JsonNode value = node.get(field);
-    return (value != null && !value.isNull()) ? value.asString() : null;
+    return value != null && !value.isNull() ? value.asString() : null;
   }
 
   /**
