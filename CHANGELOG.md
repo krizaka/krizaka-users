@@ -38,6 +38,20 @@ Every Krizaka JVM artifact is released at the same version.
 - `identity_outbox` gains `headers JSONB NOT NULL DEFAULT '{}'` (`infra/initdb/10-identity.sql`). An existing database
   needs `ALTER TABLE identity_outbox ADD COLUMN IF NOT EXISTS headers JSONB NOT NULL DEFAULT '{}'::jsonb;`.
 
+### Fixed
+
+- **Security — federated sign-in** (found while writing ADR-001, krizaka/.github):
+  - a Google ID token issued to **any** application was accepted (its `aud` was never compared with our client id):
+    the audience and `email_verified` are now required;
+  - a GitHub access token issued to **any** OAuth app was accepted: it must now belong to ours
+    (`POST /applications/{client_id}/token`, basic auth with the app's credentials);
+  - an empty client id (`${GOOGLE_CLIENT_ID:}` unset) still turned the verifier on: a provider is now on exactly when its
+    id is set;
+  - a federated user was stored as `local` without its provider id, so the second sign-in of the same person found
+    nobody and failed on the unique username: the provider identity is stored and found;
+  - two people with the same display name could not both sign in: a short suffix is added, and an e-mail address is
+    never used as a public username.
+
 ## [0.1.0]
 
 First release as a Krizaka building block (formerly `orazaka-users`, part of the Orazaka platform).

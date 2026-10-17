@@ -77,6 +77,18 @@ class UserRepositoryAdapter implements UserRepositoryPort {
   }
 
   @Override
+  public User createFederated(User user, String providerName, String providerId) {
+    UserDto saved =
+        provider.create(UserMapper.toFederatedDto(user, providerName, providerId), null);
+    return UserMapper.toDomain(saved);
+  }
+
+  @Override
+  public boolean usernameTaken(String username) {
+    return provider.existsByUsername(username);
+  }
+
+  @Override
   public void updatePasswordHashByEmail(String email, String passwordHash) {
     provider.updatePasswordHashByEmail(email, passwordHash);
   }

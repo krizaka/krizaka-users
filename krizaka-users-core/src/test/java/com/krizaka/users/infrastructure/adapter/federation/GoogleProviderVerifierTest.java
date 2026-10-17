@@ -18,6 +18,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 class GoogleProviderVerifierTest {
 
+  private static final String CLIENT_ID = "1234-krizaka.apps.googleusercontent.com";
   private RestClient restClient;
   private RestClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;
   private RestClient.RequestHeadersSpec<?> requestHeadersSpec;
@@ -37,7 +38,7 @@ class GoogleProviderVerifierTest {
     doReturn(requestHeadersSpec).when(requestHeadersSpec).accept(any(MediaType.class));
     doReturn(responseSpec).when(requestHeadersSpec).retrieve();
 
-    verifier = new GoogleProviderVerifier(restClient, objectMapper);
+    verifier = new GoogleProviderVerifier(restClient, objectMapper, CLIENT_ID);
   }
 
   @Test
@@ -146,6 +147,8 @@ class GoogleProviderVerifierTest {
 
     ObjectNode tokenInfo = objectMapper.createObjectNode();
     tokenInfo.put("email", "user@gmail.com");
+    tokenInfo.put("aud", CLIENT_ID);
+    tokenInfo.put("email_verified", "true");
 
     when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
 
@@ -160,6 +163,8 @@ class GoogleProviderVerifierTest {
 
     ObjectNode tokenInfo = objectMapper.createObjectNode();
     tokenInfo.put("sub", "google-sub-123");
+    tokenInfo.put("aud", CLIENT_ID);
+    tokenInfo.put("email_verified", "true");
 
     when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
 
@@ -213,9 +218,38 @@ class GoogleProviderVerifierTest {
   private ObjectNode createTokenInfoResponse() {
     ObjectNode tokenInfo = objectMapper.createObjectNode();
     tokenInfo.put("sub", "google-sub-123");
+    tokenInfo.put("aud", CLIENT_ID);
+    tokenInfo.put("email_verified", "true");
     tokenInfo.put("email", "user@gmail.com");
     tokenInfo.put("name", "Test User");
     tokenInfo.put("picture", "https://lh3.googleusercontent.com/photo");
+    tokenInfo.put("aud", CLIENT_ID);
+    tokenInfo.put("email_verified", "true");
     return tokenInfo;
+  }
+
+  // Finding 2 (ADR-001): a Google ID token issued to another application must be refused.
+  @Test
+  void doVerifyAndExtract_tokenForAnotherApplication_isRefused() {
+    String jwt = createJwt("accounts.google.com", futureEpoch());
+    ObjectNode tokenInfo = createTokenInfoResponse();
+    tokenInfo.put("aud", "someone-elses-app.apps.googleusercontent.com");
+    when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
+
+    assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("audience");
+  }
+
+  @Test
+  void doVerifyAndExtract_unverifiedEmail_isRefused() {
+    String jwt = createJwt("accounts.google.com", futureEpoch());
+    ObjectNode tokenInfo = createTokenInfoResponse();
+    tokenInfo.put("email_verified", "false");
+    when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
+
+    assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("verified");
   }
 }

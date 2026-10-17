@@ -59,7 +59,8 @@ class AbstractProviderVerifierTest {
 
   @Test
   void githubProviderVerifierSupports() {
-    GithubProviderVerifier verifier = new GithubProviderVerifier(RestClient.create());
+    GithubProviderVerifier verifier =
+        new GithubProviderVerifier(RestClient.create(), "id", "secret");
     assertThat(verifier.supports("github")).isTrue();
     assertThat(verifier.tokenLabel()).isEqualTo("GitHub access token");
   }
@@ -67,7 +68,8 @@ class AbstractProviderVerifierTest {
   @Test
   void googleProviderVerifierSupports() {
     GoogleProviderVerifier verifier =
-        new GoogleProviderVerifier(RestClient.create(), new tools.jackson.databind.ObjectMapper());
+        new GoogleProviderVerifier(
+            RestClient.create(), new tools.jackson.databind.ObjectMapper(), "id");
     assertThat(verifier.supports("google")).isTrue();
     assertThat(verifier.tokenLabel()).isEqualTo("Google ID token");
   }

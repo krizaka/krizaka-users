@@ -168,4 +168,31 @@ class UserRepositoryAdapterTest {
     assertThat(result).isPresent();
     assertThat(result.get().email()).isEqualTo(user.email());
   }
+
+  @Test
+  @DisplayName(
+      "createFederated stores the provider identity, without a password (ADR-001 finding 1)")
+  void createFederatedStoresTheProviderIdentity() {
+    User user = Persona.freeUser();
+    when(provider.create(
+            org.mockito.ArgumentMatchers.any(UserDto.class), org.mockito.ArgumentMatchers.isNull()))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    adapter.createFederated(user, "github", "583231");
+
+    org.mockito.ArgumentCaptor<UserDto> dto = org.mockito.ArgumentCaptor.forClass(UserDto.class);
+    org.mockito.Mockito.verify(provider)
+        .create(dto.capture(), org.mockito.ArgumentMatchers.isNull());
+    assertThat(dto.getValue().provider()).isEqualTo("github");
+    assertThat(dto.getValue().providerId()).isEqualTo("583231");
+    assertThat(dto.getValue().passwordHash()).isNull();
+  }
+
+  @Test
+  @DisplayName("usernameTaken asks the store")
+  void usernameTaken() {
+    when(provider.existsByUsername("Alex Martin")).thenReturn(true);
+    assertThat(adapter.usernameTaken("Alex Martin")).isTrue();
+    assertThat(adapter.usernameTaken("Someone Else")).isFalse();
+  }
 }

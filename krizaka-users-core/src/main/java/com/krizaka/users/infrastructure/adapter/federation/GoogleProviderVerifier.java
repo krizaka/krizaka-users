@@ -3,6 +3,7 @@ package com.krizaka.users.infrastructure.adapter.federation;
 import com.krizaka.users.domain.model.ExtractedProfile;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Objects;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
@@ -11,21 +12,15 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * OAuth2 provider verifier for Google identity tokens.
  *
- * <p>Conditionally loaded only when {@code spring.security.oauth2.client.registration.google
- * .client-id} is configured. Decodes the Google-issued JWT ID token, validates the issuer and
- * expiration claims, and extracts a canonical {@link ExtractedProfile}.
- *
  * <p>Verification flow:
  *
  * <ol>
- *   <li>Decode the JWT payload (Base64URL middle segment).
- *   <li>Validate issuer is {@code accounts.google.com} or {@code https://accounts.google.com}.
- *   <li>Validate the token is not expired ({@code exp} claim).
- *   <li>Extract {@code sub}, {@code email}, {@code name}, {@code picture} claims.
+ *   <li>Decode the JWT payload and check the issuer ({@code accounts.google.com}) and expiry.
+ *   <li>Validate the token server-side with Google's {@code tokeninfo} endpoint (signature).
+ *   <li>Require the audience to be <b>our</b> client id — a token issued to any other application
+ *       is refused (ADR-001, finding 2) — and the e-mail address to be verified by Google.
+ *   <li>Extract {@code sub}, {@code email}, {@code name}, {@code picture}.
  * </ol>
- *
- * <p>For production-grade JWKS signature verification, the {@code tokeninfo} endpoint is called as
- * a secondary validation step.
  *
  * <p>Per §2.16 [ERR-120], all HTTP calls use Spring {@link RestClient}.
  */
@@ -36,10 +31,12 @@ class GoogleProviderVerifier extends AbstractProviderVerifier {
 
   private final RestClient restClient;
   private final ObjectMapper objectMapper;
+  private final String clientId;
 
-  GoogleProviderVerifier(RestClient restClient, ObjectMapper objectMapper) {
+  GoogleProviderVerifier(RestClient restClient, ObjectMapper objectMapper, String clientId) {
     this.restClient = restClient;
     this.objectMapper = objectMapper;
+    this.clientId = Objects.requireNonNull(clientId, "Google client id");
     logger.info("Google OAuth2 provider verifier initialized");
   }
 
@@ -55,16 +52,13 @@ class GoogleProviderVerifier extends AbstractProviderVerifier {
 
   @Override
   protected ExtractedProfile doVerifyAndExtract(String idToken) {
-    // Step 1: Decode JWT payload for claim extraction
     JsonNode payload = decodeJwtPayload(idToken);
 
-    // Step 2: Validate issuer
     String issuer = textOrNull(payload, "iss");
     if (!"accounts.google.com".equals(issuer) && !"https://accounts.google.com".equals(issuer)) {
       throw new IllegalArgumentException("Invalid Google token issuer: " + issuer);
     }
 
-    // Step 3: Validate expiration
     long exp = payload.has("exp") ? payload.get("exp").asLong() : 0;
     long now = System.currentTimeMillis() / 1000;
     if (exp < now) {
@@ -72,10 +66,15 @@ class GoogleProviderVerifier extends AbstractProviderVerifier {
           "Google ID token has expired (exp=" + exp + ", now=" + now + ")");
     }
 
-    // Step 4: Server-side validation via Google tokeninfo endpoint
     JsonNode tokenInfo = verifyViaTokenInfo(idToken);
 
-    // Step 5: Extract profile from verified token
+    if (!clientId.equals(textOrNull(tokenInfo, "aud"))) {
+      throw new IllegalArgumentException("Google ID token audience is not this application");
+    }
+    if (!"true".equals(textOrNull(tokenInfo, "email_verified"))) {
+      throw new IllegalArgumentException("Google account e-mail address is not verified");
+    }
+
     String sub = extractRequired(tokenInfo, "sub", "Google user ID");
     String email = extractRequired(tokenInfo, "email", "email");
     String name = textOrNull(tokenInfo, "name");

@@ -14,6 +14,9 @@ public interface UserPersistenceProvider {
 
   long countByEmail(String email);
 
+  /** Whether a user already has this username (usernames are unique). */
+  boolean existsByUsername(String username);
+
   UserDto save(UserDto userDto);
 
   UserDto create(UserDto userDto, String passwordHash);

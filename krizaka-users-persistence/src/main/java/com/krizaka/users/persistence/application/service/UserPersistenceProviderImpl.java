@@ -62,6 +62,13 @@ class UserPersistenceProviderImpl implements UserPersistenceProvider {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public boolean existsByUsername(String username) {
+    Objects.requireNonNull(username, "Username cannot be null");
+    return userRepository.existsByUsername(username);
+  }
+
+  @Override
   public UserDto save(UserDto userDto) {
     Objects.requireNonNull(userDto, "UserDto cannot be null");
     UserEntity existing =

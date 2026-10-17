@@ -2,153 +2,124 @@ package com.krizaka.users.infrastructure.adapter.federation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 import com.krizaka.users.domain.model.ExtractedProfile;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
+/**
+ * GitHub sign-in: the access token is first checked against <b>our</b> OAuth app ({@code POST
+ * /applications/{client_id}/token}, basic auth with the app's credentials) — a token issued to any
+ * other application is refused (ADR-001, finding 3) — and the profile comes from that answer.
+ */
 class GithubProviderVerifierTest {
 
-  private RestClient restClient;
-  private RestClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;
-  private RestClient.RequestHeadersSpec<?> requestHeadersSpec;
-  private RestClient.ResponseSpec responseSpec;
+  private static final String CLIENT_ID = "Iv1.krizaka";
+  private static final String CHECK = "https://api.github.com/applications/" + CLIENT_ID + "/token";
+  private static final String EMAILS = "https://api.github.com/user/emails";
+
+  private MockRestServiceServer server;
   private GithubProviderVerifier verifier;
 
   @BeforeEach
   void setUp() {
-    restClient = mock(RestClient.class);
-    requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
-    requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
-    responseSpec = mock(RestClient.ResponseSpec.class);
+    RestClient.Builder builder = RestClient.builder();
+    server = MockRestServiceServer.bindTo(builder).build();
+    verifier = new GithubProviderVerifier(builder.build(), CLIENT_ID, "app-secret");
+  }
 
-    doReturn(requestHeadersUriSpec).when(restClient).get();
-    doReturn(requestHeadersSpec).when(requestHeadersUriSpec).uri(any(String.class));
-    doReturn(requestHeadersSpec).when(requestHeadersSpec).header(any(), any());
-    doReturn(requestHeadersSpec).when(requestHeadersSpec).accept(any(MediaType.class));
-    doReturn(responseSpec).when(requestHeadersSpec).retrieve();
+  private static String basic() {
+    return "Basic "
+        + Base64.getEncoder()
+            .encodeToString((CLIENT_ID + ":app-secret").getBytes(StandardCharsets.UTF_8));
+  }
 
-    verifier = new GithubProviderVerifier(restClient);
+  private void tokenBelongsToUs(String userJson) {
+    server
+        .expect(requestTo(CHECK))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(header("Authorization", basic()))
+        .andExpect(content().json("{\"access_token\":\"gho_token\"}"))
+        .andRespond(
+            withSuccess("{\"id\":1,\"user\":" + userJson + "}", MediaType.APPLICATION_JSON));
   }
 
   @Test
-  void supports_github_returnsTrue() {
+  void supportsGithubOnly() {
     assertThat(verifier.supports("github")).isTrue();
     assertThat(verifier.supports("GITHUB")).isTrue();
-  }
-
-  @Test
-  void supports_other_returnsFalse() {
     assertThat(verifier.supports("google")).isFalse();
-  }
-
-  @Test
-  void tokenLabel_returnsGithubAccessToken() {
     assertThat(verifier.tokenLabel()).isEqualTo("GitHub access token");
   }
 
   @Test
-  void doVerifyAndExtract_fullProfile_returnsExtractedProfile() {
-    ObjectMapper mapper = new ObjectMapper();
-    ObjectNode user = mapper.createObjectNode();
-    user.put("id", 12345);
-    user.put("login", "octocat");
-    user.put("email", "octocat@github.com");
-    user.put("name", "The Octocat");
-    user.put("avatar_url", "https://avatars.githubusercontent.com/u/12345");
+  void aTokenOfOurAppGivesTheProfile() {
+    tokenBelongsToUs(
+        "{\"id\":12345,\"login\":\"octocat\",\"name\":\"The Octocat\","
+            + "\"email\":\"octocat@github.com\","
+            + "\"avatar_url\":\"https://avatars.githubusercontent.com/u/12345\"}");
 
-    when(responseSpec.body(JsonNode.class)).thenReturn(user);
+    ExtractedProfile profile = verifier.verifyAndExtract("gho_token");
 
-    ExtractedProfile profile = verifier.doVerifyAndExtract("ghp_valid_token");
-
-    assertThat(profile.email()).isEqualTo("octocat@github.com");
     assertThat(profile.providerId()).isEqualTo("12345");
+    assertThat(profile.email()).isEqualTo("octocat@github.com");
     assertThat(profile.name()).isEqualTo("The Octocat");
     assertThat(profile.avatarUrl()).isEqualTo("https://avatars.githubusercontent.com/u/12345");
+    server.verify();
   }
 
   @Test
-  void doVerifyAndExtract_privateEmail_fallsBackToNoreply() {
-    ObjectMapper mapper = new ObjectMapper();
-    ObjectNode user = mapper.createObjectNode();
-    user.put("id", 67890);
-    user.put("login", "privateuser");
-    user.putNull("email");
-    user.put("name", "Private User");
-    user.putNull("avatar_url");
+  void aTokenIssuedToAnotherApplicationIsRefused() {
+    server.expect(requestTo(CHECK)).andRespond(withResourceNotFound());
 
-    when(responseSpec.body(JsonNode.class)).thenReturn(user);
-
-    ExtractedProfile profile = verifier.doVerifyAndExtract("ghp_private_token");
-
-    assertThat(profile.email()).isEqualTo("privateuser@users.noreply.github.com");
-    assertThat(profile.providerId()).isEqualTo("67890");
-    assertThat(profile.name()).isEqualTo("Private User");
-    assertThat(profile.avatarUrl()).isNull();
-  }
-
-  @Test
-  void doVerifyAndExtract_noName_fallsBackToLogin() {
-    ObjectMapper mapper = new ObjectMapper();
-    ObjectNode user = mapper.createObjectNode();
-    user.put("id", 99999);
-    user.put("login", "noname");
-    user.put("email", "noname@example.com");
-    user.putNull("name");
-    user.putNull("avatar_url");
-
-    when(responseSpec.body(JsonNode.class)).thenReturn(user);
-
-    ExtractedProfile profile = verifier.doVerifyAndExtract("ghp_noname_token");
-
-    assertThat(profile.email()).isEqualTo("noname@example.com");
-    assertThat(profile.name()).isEqualTo("noname");
-  }
-
-  @Test
-  void doVerifyAndExtract_blankEmail_fallsBackToNoreply() {
-    ObjectMapper mapper = new ObjectMapper();
-    ObjectNode user = mapper.createObjectNode();
-    user.put("id", 11111);
-    user.put("login", "blankmail");
-    user.put("email", "   ");
-    user.put("name", "Blank Mail");
-    user.putNull("avatar_url");
-
-    when(responseSpec.body(JsonNode.class)).thenReturn(user);
-
-    ExtractedProfile profile = verifier.doVerifyAndExtract("ghp_blank_token");
-
-    assertThat(profile.email()).isEqualTo("blankmail@users.noreply.github.com");
-  }
-
-  @Test
-  void doVerifyAndExtract_nullResponse_throwsIllegalArgument() {
-    when(responseSpec.body(JsonNode.class)).thenReturn(null);
-
-    assertThatThrownBy(() -> verifier.doVerifyAndExtract("ghp_bad_token"))
+    assertThatThrownBy(() -> verifier.verifyAndExtract("gho_token"))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("GitHub API returned null response");
+        .hasMessageContaining("not issued to this application");
   }
 
   @Test
-  void verifyAndExtract_nullToken_throwsIllegalArgument() {
-    assertThatThrownBy(() -> verifier.verifyAndExtract(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("GitHub access token cannot be null or empty");
+  void aPrivateEmailIsReadFromTheVerifiedPrimaryAddress() {
+    tokenBelongsToUs("{\"id\":67890,\"login\":\"private\",\"name\":null,\"email\":null}");
+    server
+        .expect(requestTo(EMAILS))
+        .andExpect(header("Authorization", "Bearer gho_token"))
+        .andRespond(
+            withSuccess(
+                "[{\"email\":\"old@example.com\",\"primary\":false,\"verified\":true},"
+                    + "{\"email\":\"unverified@example.com\",\"primary\":true,\"verified\":false},"
+                    + "{\"email\":\"me@example.com\",\"primary\":true,\"verified\":true}]",
+                MediaType.APPLICATION_JSON));
+
+    ExtractedProfile profile = verifier.verifyAndExtract("gho_token");
+
+    assertThat(profile.email()).isEqualTo("me@example.com");
+    assertThat(profile.name()).isEqualTo("private");
   }
 
   @Test
-  void verifyAndExtract_blankToken_throwsIllegalArgument() {
-    assertThatThrownBy(() -> verifier.verifyAndExtract("   "))
+  void withoutAnyVerifiedAddressTheNoreplyAddressIsUsed() {
+    tokenBelongsToUs("{\"id\":67890,\"login\":\"private\",\"email\":\"\"}");
+    server.expect(requestTo(EMAILS)).andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+    ExtractedProfile profile = verifier.verifyAndExtract("gho_token");
+
+    assertThat(profile.email()).isEqualTo("67890+private@users.noreply.github.com");
+  }
+
+  @Test
+  void anEmptyTokenIsRefusedBeforeAnyCall() {
+    assertThatThrownBy(() -> verifier.verifyAndExtract("  "))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("GitHub access token cannot be null or empty");
+        .hasMessageContaining("cannot be null or empty");
+    server.verify();
   }
 }
