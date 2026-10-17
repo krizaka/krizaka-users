@@ -49,6 +49,9 @@ public interface UserRepository extends JpaRepository<UserEntity, String> {
    */
   long countByEmail(String email);
 
+  /** Whether a user already has this username. */
+  boolean existsByUsername(String username);
+
   /**
    * Resolves a user by their external identity provider and provider-specific user identifier.
    *

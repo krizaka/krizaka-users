@@ -1,35 +1,38 @@
 package com.krizaka.users.infrastructure.adapter.federation;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import com.krizaka.users.infrastructure.config.OAuthClientProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Package-private configuration class declaring OAuth2 provider verifiers.
- *
- * <p>By declaring these beans programmatically instead of marking classes with {@code @Component},
- * we avoid constructor autowiring issues and remain fully aligned with Spring configuration best
- * practices.
+ * Package-private configuration declaring the OAuth2 provider verifiers. A provider is on exactly
+ * when its client id is set: an empty environment variable (the default `${GOOGLE_CLIENT_ID:}`)
+ * leaves it off. The verifier gets the client it checks tokens against.
  */
 @Configuration
 class FederationConfig {
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "spring.security.oauth2.client.registration.google",
-      name = "client-id")
+  @ConditionalOnExpression(
+      "'${spring.security.oauth2.client.registration.google.client-id:}'.trim() != ''")
   GoogleProviderVerifier googleProviderVerifier(
-      RestClient identityRestClient, ObjectMapper objectMapper) {
-    return new GoogleProviderVerifier(identityRestClient, objectMapper);
+      RestClient identityRestClient, ObjectMapper objectMapper, OAuthClientProperties clients) {
+    return new GoogleProviderVerifier(
+        identityRestClient, objectMapper, clients.of("google").clientId());
   }
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "spring.security.oauth2.client.registration.github",
-      name = "client-id")
-  GithubProviderVerifier githubProviderVerifier(RestClient identityRestClient) {
-    return new GithubProviderVerifier(identityRestClient);
+  @ConditionalOnExpression(
+      "'${spring.security.oauth2.client.registration.github.client-id:}'.trim() != ''")
+  GithubProviderVerifier githubProviderVerifier(
+      RestClient identityRestClient, OAuthClientProperties clients) {
+    OAuthClientProperties.Registration github = clients.of("github");
+    return new GithubProviderVerifier(
+        identityRestClient,
+        github.clientId(),
+        github.clientSecret() == null ? "" : github.clientSecret());
   }
 }

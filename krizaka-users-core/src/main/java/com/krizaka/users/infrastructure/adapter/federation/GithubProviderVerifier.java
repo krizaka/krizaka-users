@@ -1,28 +1,48 @@
 package com.krizaka.users.infrastructure.adapter.federation;
 
 import com.krizaka.users.domain.model.ExtractedProfile;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Objects;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import tools.jackson.databind.JsonNode;
 
 /**
- * OAuth2 provider verifier for GitHub identity tokens.
+ * OAuth2 provider verifier for GitHub access tokens.
  *
- * <p>Conditionally loaded only when {@code spring.security.oauth2.client.registration.github
- * .client-id} is configured. Calls the GitHub User API with the provided access token to extract a
- * canonical {@link ExtractedProfile} for downstream identity reconciliation.
+ * <p>GitHub has no ID token: the access token is checked against <b>our</b> OAuth app first ({@code
+ * POST /applications/{client_id}/token}, basic auth with the app's id and secret). A token issued
+ * to any other application answers 404 and is refused (ADR-001, finding 3). The answer carries the
+ * user; a private e-mail address is read from {@code /user/emails} (the verified primary one), and
+ * without one the GitHub noreply address stands in.
  *
  * <p>Per §2.16 [ERR-120], all HTTP calls use Spring {@link RestClient}.
  */
 class GithubProviderVerifier extends AbstractProviderVerifier {
 
-  private static final String GITHUB_USER_API = "https://api.github.com/user";
+  private static final String GITHUB_API = "https://api.github.com";
+  private static final MediaType GITHUB_JSON =
+      MediaType.parseMediaType("application/vnd.github+json");
 
   private final RestClient restClient;
+  private final String clientId;
+  private final String basicAuth;
 
-  GithubProviderVerifier(RestClient restClient) {
+  GithubProviderVerifier(RestClient restClient, String clientId, String clientSecret) {
     this.restClient = restClient;
+    this.clientId = Objects.requireNonNull(clientId, "GitHub client id");
+    this.basicAuth =
+        "Basic "
+            + Base64.getEncoder()
+                .encodeToString(
+                    (clientId + ":" + Objects.requireNonNull(clientSecret, "GitHub client secret"))
+                        .getBytes(StandardCharsets.UTF_8));
     logger.info("GitHub OAuth2 provider verifier initialized");
   }
 
@@ -38,32 +58,90 @@ class GithubProviderVerifier extends AbstractProviderVerifier {
 
   @Override
   protected ExtractedProfile doVerifyAndExtract(String accessToken) {
-    JsonNode userNode =
-        restClient
-            .get()
-            .uri(GITHUB_USER_API)
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-            .accept(MediaType.APPLICATION_JSON)
-            .retrieve()
-            .body(JsonNode.class);
-
-    if (userNode == null) {
-      throw new IllegalArgumentException("GitHub API returned null response for access token");
+    JsonNode check = checkTokenBelongsToUs(accessToken);
+    JsonNode user = check.get("user");
+    if (user == null || user.isNull()) {
+      throw new IllegalArgumentException("GitHub token check returned no user");
     }
 
-    String email = extractField(userNode, "email");
-    String id = extractField(userNode, "id");
-    String name = textOrNull(userNode, "name");
-    String login = extractField(userNode, "login");
-    String avatarUrl = textOrNull(userNode, "avatar_url");
-
-    // GitHub may return null email if user has private email; fall back to login-based
+    String id = extractField(user, "id");
+    String login = extractField(user, "login");
+    if (id == null || login == null) {
+      throw new IllegalArgumentException("GitHub token check returned an incomplete user");
+    }
+    String name = textOrNull(user, "name");
+    String avatarUrl = textOrNull(user, "avatar_url");
+    // The public address (GitHub shows only verified ones), else the verified primary, else the
+    // noreply address.
+    String email = extractField(user, "email");
     if (email == null || email.isBlank()) {
-      email = login + "@users.noreply.github.com";
+      email = verifiedPrimaryEmail(accessToken);
+    }
+    if (email == null || email.isBlank()) {
+      email = id + "+" + login + "@users.noreply.github.com";
     }
 
     String displayName = name != null && !name.isBlank() ? name : login;
-
     return new ExtractedProfile(email, id, displayName, avatarUrl);
+  }
+
+  private JsonNode checkTokenBelongsToUs(String accessToken) {
+    try {
+      JsonNode body =
+          restClient
+              .post()
+              .uri(GITHUB_API + "/applications/{clientId}/token", clientId)
+              .header(HttpHeaders.AUTHORIZATION, basicAuth)
+              .accept(GITHUB_JSON)
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(Map.of("access_token", accessToken))
+              .retrieve()
+              .body(JsonNode.class);
+      if (body == null) {
+        throw new IllegalArgumentException("GitHub token check returned an empty answer");
+      }
+      return body;
+    } catch (RestClientResponseException e) {
+      if (e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)
+          || e.getStatusCode().isSameCodeAs(HttpStatus.UNPROCESSABLE_CONTENT)) {
+        throw new IllegalArgumentException("GitHub token was not issued to this application", e);
+      }
+      throw new IllegalArgumentException("GitHub token check failed: " + e.getStatusCode(), e);
+    }
+  }
+
+  /** The verified primary address (scope {@code user:email}); {@code null} when unreadable. */
+  private String verifiedPrimaryEmail(String accessToken) {
+    try {
+      JsonNode emails =
+          restClient
+              .get()
+              .uri(GITHUB_API + "/user/emails")
+              .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+              .accept(GITHUB_JSON)
+              .retrieve()
+              .body(JsonNode.class);
+      if (emails == null || !emails.isArray()) {
+        return null;
+      }
+      String anyVerified = null;
+      for (JsonNode e : emails) {
+        boolean verified = e.path("verified").asBoolean(false);
+        if (!verified) {
+          continue;
+        }
+        if (e.path("primary").asBoolean(false)) {
+          return textOrNull(e, "email");
+        }
+        if (anyVerified == null) {
+          anyVerified = textOrNull(e, "email");
+        }
+      }
+      return anyVerified;
+    } catch (RestClientException e) {
+      logger.debug(
+          "GitHub e-mail addresses unreadable ({}); using the noreply address", e.getMessage());
+      return null;
+    }
   }
 }
