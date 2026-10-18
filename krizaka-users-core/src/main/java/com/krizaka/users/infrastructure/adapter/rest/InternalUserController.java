@@ -1,6 +1,7 @@
 package com.krizaka.users.infrastructure.adapter.rest;
 
 import com.krizaka.users.domain.model.RateLimitInfo;
+import com.krizaka.users.domain.model.User;
 import com.krizaka.users.domain.model.UserProfile;
 import com.krizaka.users.domain.ports.inbound.ApiKeyService;
 import com.krizaka.users.domain.ports.inbound.IdentityService;
@@ -12,6 +13,7 @@ import com.krizaka.users.infrastructure.adapter.rest.dto.InternalUserResponse;
 import com.krizaka.users.infrastructure.adapter.rest.dto.TokenExchangeRequest;
 import com.krizaka.users.infrastructure.adapter.rest.dto.TokenExchangeResponse;
 import java.util.Objects;
+import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -84,11 +86,23 @@ class InternalUserController {
         .authenticateKey(request.apiKey())
         .filter(key -> key.user().enabled())
         .map(
-            key ->
-                ResponseEntity.ok(
-                    new TokenExchangeResponse(
-                        tokenService.issue(key.user()), key.scopes().stream().sorted().toList())))
+            key -> {
+              Optional<RateLimitInfo> tier = tierOf(key.user());
+              return ResponseEntity.ok(
+                  new TokenExchangeResponse(
+                      tokenService.issue(key.user()),
+                      key.scopes().stream().sorted().toList(),
+                      tier.map(RateLimitInfo::tierKey).orElse(null),
+                      tier.map(RateLimitInfo::requestsPerMinute).orElse(null)));
+            })
         .orElseGet(() -> ResponseEntity.status(401).build());
+  }
+
+  /** The user's own tier, else the default one: the limit the edge holds this caller to. */
+  private Optional<RateLimitInfo> tierOf(User user) {
+    return Optional.ofNullable(user.rateLimitTier())
+        .flatMap(rateLimitProvider::getRateLimit)
+        .or(() -> rateLimitProvider.getDefaultTierKey().flatMap(rateLimitProvider::getRateLimit));
   }
 
   /** The DB-flagged default rate-limit tier (anonymous callers). */
