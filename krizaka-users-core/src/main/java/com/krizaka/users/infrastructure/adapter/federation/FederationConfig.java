@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Package-private configuration declaring the OAuth2 provider verifiers. A provider is on exactly
@@ -18,10 +17,9 @@ class FederationConfig {
   @Bean
   @ConditionalOnExpression(
       "'${spring.security.oauth2.client.registration.google.client-id:}'.trim() != ''")
-  GoogleProviderVerifier googleProviderVerifier(
-      RestClient identityRestClient, ObjectMapper objectMapper, OAuthClientProperties clients) {
-    return new GoogleProviderVerifier(
-        identityRestClient, objectMapper, clients.of("google").clientId());
+  GoogleProviderVerifier googleProviderVerifier(OAuthClientProperties clients) {
+    String clientId = clients.of("google").clientId();
+    return new GoogleProviderVerifier(GoogleProviderVerifier.googleDecoder(clientId), clientId);
   }
 
   @Bean
