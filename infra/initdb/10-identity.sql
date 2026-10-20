@@ -168,7 +168,8 @@ CREATE INDEX idx_identity_outbox_pending ON identity_outbox(next_attempt_at) WHE
 INSERT INTO rate_limit_tiers (id, capacity, refill_tokens, refill_seconds) VALUES
 ('free', 60, 60, 60),
 ('premium', 200, 200, 60),
-('admin', 1000, 1000, 60)
+('admin', 1000, 1000, 60),
+('service', 1000, 1000, 60)
 ON CONFLICT (id) DO NOTHING;
 
 
