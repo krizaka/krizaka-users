@@ -68,8 +68,7 @@ class AbstractProviderVerifierTest {
   @Test
   void googleProviderVerifierSupports() {
     GoogleProviderVerifier verifier =
-        new GoogleProviderVerifier(
-            RestClient.create(), new tools.jackson.databind.ObjectMapper(), "id");
+        new GoogleProviderVerifier(GoogleProviderVerifier.googleDecoder("id"), "id");
     assertThat(verifier.supports("google")).isTrue();
     assertThat(verifier.tokenLabel()).isEqualTo("Google ID token");
   }
