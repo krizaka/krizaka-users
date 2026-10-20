@@ -177,6 +177,7 @@ INSERT INTO rate_limits (tier_key, requests_per_minute, concurrent_jobs, is_defa
 ('free', 60, 1, TRUE),
 ('premium', 200, 5, FALSE),
 ('admin', 1000, 20, FALSE),
-('enterprise', 1000, 20, FALSE)
+('enterprise', 1000, 20, FALSE),
+('service', 1000, 20, FALSE)
 ON CONFLICT (tier_key) DO NOTHING;
 
