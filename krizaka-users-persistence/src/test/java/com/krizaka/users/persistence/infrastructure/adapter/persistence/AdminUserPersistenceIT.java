@@ -131,11 +131,11 @@ class AdminUserPersistenceIT extends AbstractContainerIntegrationTest {
 
     var lines = provider.recentAudit("a8", 10);
     assertThat(lines)
-        .filteredOn(l -> l.action().equals("admin.user_suspended"))
+        .filteredOn(l -> "admin.user_suspended".equals(l.action()))
         .extracting("outcome", "detail")
         .containsExactly(org.assertj.core.groups.Tuple.tuple("refused", "SELF"));
     assertThat(lines)
-        .filteredOn(l -> l.action().equals("admin.user_restored"))
+        .filteredOn(l -> "admin.user_restored".equals(l.action()))
         .extracting("outcome")
         .containsExactly("ok");
   }
