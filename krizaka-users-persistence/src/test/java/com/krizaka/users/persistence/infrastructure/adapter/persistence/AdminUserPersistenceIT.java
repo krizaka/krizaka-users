@@ -124,6 +124,23 @@ class AdminUserPersistenceIT extends AbstractContainerIntegrationTest {
   }
 
   @Test
+  void aRefusedActionLeavesARowWithItsOutcome() {
+    provider.appendAuditOutcome(
+        "a8", "ada@example.test", "admin.user_suspended", "a8", "SELF", "refused");
+    provider.appendAudit("a8", "ada@example.test", "admin.user_restored", "t8", null);
+
+    var lines = provider.recentAudit("a8", 10);
+    assertThat(lines)
+        .filteredOn(l -> l.action().equals("admin.user_suspended"))
+        .extracting("outcome", "detail")
+        .containsExactly(org.assertj.core.groups.Tuple.tuple("refused", "SELF"));
+    assertThat(lines)
+        .filteredOn(l -> l.action().equals("admin.user_restored"))
+        .extracting("outcome")
+        .containsExactly("ok");
+  }
+
+  @Test
   void erasureCascadesAndTheAuditKeepsTheFactNotThePerson() {
     user("d1", "dan", "dan@example.test", false, true);
     provider.appendAudit("d1", "dan@example.test", "auth.sign_in", "d1", null);

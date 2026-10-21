@@ -11,4 +11,5 @@ public record AdminAuditRow(
     String action,
     String targetId,
     String detail,
-    String requestId) {}
+    String requestId,
+    String outcome) {}
