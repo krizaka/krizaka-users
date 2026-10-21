@@ -1,0 +1,25 @@
+{
+  "repository" : "krizaka-users",
+  "modules" : [ {
+    "artifact" : "krizaka-users-client",
+    "properties" : [ {
+      "name" : "krizaka.users.client.base-url",
+      "type" : "java.lang.String",
+      "description" : "Base URL of the users service, e.g. 'http://localhost:8083'. Setting it switches the client on."
+    }, {
+      "name" : "krizaka.users.client.cache-ttl",
+      "type" : "java.time.Duration",
+      "description" : "How long a user, profile or tier is reused before it is fetched again.",
+      "defaultValue" : "60s"
+    }, {
+      "name" : "krizaka.users.client.service-name",
+      "type" : "java.lang.String",
+      "description" : "Who is calling: the subject of the SERVICE token, visible in the users service's logs. Required."
+    }, {
+      "name" : "krizaka.users.client.service-secret",
+      "type" : "java.lang.String",
+      "description" : "Shared HS256 secret the SERVICE token of every call is signed with. Required."
+    } ],
+    "hints" : [ ]
+  } ]
+}
