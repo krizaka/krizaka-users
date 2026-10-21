@@ -138,7 +138,8 @@ CREATE TABLE admin_audit (
     actor_label VARCHAR(255) NOT NULL,
     action VARCHAR(60) NOT NULL,
     target_id VARCHAR(255),
-    detail TEXT
+    detail TEXT,
+    request_id VARCHAR(64)
 );
 CREATE INDEX idx_admin_audit_at ON admin_audit(at DESC);
 CREATE INDEX idx_admin_audit_target ON admin_audit(target_id);

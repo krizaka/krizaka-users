@@ -101,6 +101,29 @@ class AdminUserPersistenceIT extends AbstractContainerIntegrationTest {
   }
 
   @Test
+  void theAuditKeepsTheRequestOfTheCall() {
+    // ADR-085: every operator action carries the request it was made in (the id of the edge's
+    // X-Request-Id).
+    org.slf4j.MDC.put("requestId", "req-0001-abcdef");
+    try {
+      provider.appendAudit("a9", "ada@example.test", "admin.user_suspended", "t9", null);
+    } finally {
+      org.slf4j.MDC.remove("requestId");
+    }
+    provider.appendAudit("a9", "ada@example.test", "admin.user_restored", "t9", null);
+
+    var lines = provider.recentAudit("t9", 10);
+    assertThat(lines)
+        .filteredOn(l -> "admin.user_suspended".equals(l.action()))
+        .extracting("requestId")
+        .containsExactly("req-0001-abcdef");
+    assertThat(lines)
+        .filteredOn(l -> "admin.user_restored".equals(l.action()))
+        .extracting("requestId")
+        .containsNull();
+  }
+
+  @Test
   void erasureCascadesAndTheAuditKeepsTheFactNotThePerson() {
     user("d1", "dan", "dan@example.test", false, true);
     provider.appendAudit("d1", "dan@example.test", "auth.sign_in", "d1", null);
