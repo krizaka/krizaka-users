@@ -139,7 +139,8 @@ CREATE TABLE admin_audit (
     action VARCHAR(60) NOT NULL,
     target_id VARCHAR(255),
     detail TEXT,
-    request_id VARCHAR(64)
+    request_id VARCHAR(64),
+    outcome VARCHAR(12) NOT NULL DEFAULT 'ok'
 );
 CREATE INDEX idx_admin_audit_at ON admin_audit(at DESC);
 CREATE INDEX idx_admin_audit_target ON admin_audit(target_id);

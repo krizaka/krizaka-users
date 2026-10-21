@@ -46,8 +46,7 @@ class AdminUserServiceImpl implements AdminUserService {
     return repository.find(id).orElseThrow(() -> new UserNotFoundException(id));
   }
 
-  @Override
-  public AdminUserView suspend(AdminActor actor, String id) {
+  private AdminUserView doSuspend(AdminActor actor, String id) {
     AdminUserView user = get(id);
     refuseSelf(actor, id);
     if (user.admin() && user.enabled() && repository.countEnabledAdmins() <= 1) {
@@ -58,16 +57,14 @@ class AdminUserServiceImpl implements AdminUserService {
     return get(id);
   }
 
-  @Override
-  public AdminUserView restore(AdminActor actor, String id) {
+  private AdminUserView doRestore(AdminActor actor, String id) {
     get(id);
     repository.setEnabled(id, true);
     repository.appendAudit(actor.id(), actor.label(), "admin.user_restored", id, null);
     return get(id);
   }
 
-  @Override
-  public AdminUserView setAdmin(AdminActor actor, String id, boolean admin) {
+  private AdminUserView doSetAdmin(AdminActor actor, String id, boolean admin) {
     AdminUserView user = get(id);
     if (user.admin() == admin) {
       return user;
@@ -86,8 +83,7 @@ class AdminUserServiceImpl implements AdminUserService {
     return get(id);
   }
 
-  @Override
-  public Map<String, Object> export(AdminActor actor, String id) {
+  private Map<String, Object> doExport(AdminActor actor, String id) {
     AdminUserView user = get(id);
     List<AdminAuditEntry> trail = repository.recentAudit(id, MAX_AUDIT);
     repository.appendAudit(actor.id(), actor.label(), "admin.account_exported", id, null);
@@ -107,8 +103,7 @@ class AdminUserServiceImpl implements AdminUserService {
     return out;
   }
 
-  @Override
-  public void erase(AdminActor actor, String id, String confirmEmail) {
+  private void doErase(AdminActor actor, String id, String confirmEmail) {
     AdminUserView user = get(id);
     refuseSelf(actor, id);
     if (user.admin() && user.enabled() && repository.countEnabledAdmins() <= 1) {
@@ -122,6 +117,57 @@ class AdminUserServiceImpl implements AdminUserService {
     repository.anonymiseAudit(id);
     repository.delete(id);
     repository.appendAudit(actor.id(), actor.label(), "admin.account_deleted", id, null);
+  }
+
+  @Override
+  public AdminUserView suspend(AdminActor actor, String id) {
+    return audited(actor, "admin.user_suspended", id, () -> doSuspend(actor, id));
+  }
+
+  @Override
+  public AdminUserView restore(AdminActor actor, String id) {
+    return audited(actor, "admin.user_restored", id, () -> doRestore(actor, id));
+  }
+
+  @Override
+  public AdminUserView setAdmin(AdminActor actor, String id, boolean admin) {
+    return audited(actor, "admin.user_role_changed", id, () -> doSetAdmin(actor, id, admin));
+  }
+
+  @Override
+  public Map<String, Object> export(AdminActor actor, String id) {
+    return audited(actor, "admin.account_exported", id, () -> doExport(actor, id));
+  }
+
+  @Override
+  public void erase(AdminActor actor, String id, String confirmEmail) {
+    audited(
+        actor,
+        "admin.account_deleted",
+        id,
+        () -> {
+          doErase(actor, id, confirmEmail);
+          return null;
+        });
+  }
+
+  /**
+   * Runs an administration action and audits what did not happen as well as what did (ADR-085): a
+   * refusal (the last administrator, one's own account, a wrong confirmation) is a {@code refused}
+   * line, an unknown account a {@code failed} one, each in its own transaction.
+   */
+  private <T> T audited(
+      AdminActor actor, String action, String id, java.util.function.Supplier<T> body) {
+    try {
+      return body.get();
+    } catch (AdminActionRefusedException refused) {
+      repository.appendAuditOutcome(
+          actor.id(), actor.label(), action, id, refused.code(), "refused");
+      throw refused;
+    } catch (UserNotFoundException missing) {
+      repository.appendAuditOutcome(actor.id(), actor.label(), action, id, "not_found", "failed");
+      throw missing;
+    }
   }
 
   @Override

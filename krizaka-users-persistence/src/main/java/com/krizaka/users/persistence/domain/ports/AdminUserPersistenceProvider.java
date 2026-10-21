@@ -35,6 +35,18 @@ public interface AdminUserPersistenceProvider {
       String actorId, String actorLabel, String action, String targetId, String detail);
 
   /**
+   * A line for an action that did not happen ({@code refused}, {@code failed}), written in its own
+   * transaction so it survives the rollback of the action it describes.
+   */
+  void appendAuditOutcome(
+      String actorId,
+      String actorLabel,
+      String action,
+      String targetId,
+      String detail,
+      String outcome);
+
+  /**
    * The latest lines of the trail, newest first; with {@code targetId}, only those about that
    * account.
    */

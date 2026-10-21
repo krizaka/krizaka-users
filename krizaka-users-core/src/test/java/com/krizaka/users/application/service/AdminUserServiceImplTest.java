@@ -72,6 +72,25 @@ class AdminUserServiceImplTest {
         .isInstanceOfSatisfying(
             AdminActionRefusedException.class, e -> assertThat(e.code()).isEqualTo("SELF"));
     verify(repository, never()).setEnabled(any(), eq(false));
+    // ADR-085: a refused action is audited too (what was tried, and why it was refused).
+    verify(repository)
+        .appendAuditOutcome(
+            "admin-1", "admin@example.test", "admin.user_suspended", "admin-1", "SELF", "refused");
+  }
+
+  @Test
+  void anActionOnAnUnknownAccountIsAuditedAsFailed() {
+    when(repository.find("ghost")).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.suspend(ME, "ghost"))
+        .isInstanceOf(UserNotFoundException.class);
+    verify(repository)
+        .appendAuditOutcome(
+            "admin-1",
+            "admin@example.test",
+            "admin.user_suspended",
+            "ghost",
+            "not_found",
+            "failed");
   }
 
   @Test
