@@ -7,18 +7,20 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 /**
  * Where the users service is and how to call it ({@code krizaka.users.client}).
  *
- * @param baseUrl the users service's base URL, e.g. {@code http://localhost:8083}
- * @param serviceSecret the shared HS256 secret the {@code SERVICE} token is signed with
- * @param serviceName who is calling — the token's subject, visible in the users service's logs
- * @param cacheTtl how long a user, profile or tier is reused before it is fetched again; default
- *     one minute
+ * @param baseUrl Base URL of the users service, e.g. 'http://localhost:8083'. Setting it switches
+ *     the client on.
+ * @param serviceSecret Shared HS256 secret the SERVICE token of every call is signed with.
+ *     Required.
+ * @param serviceName Who is calling: the subject of the SERVICE token, visible in the users
+ *     service's logs. Required.
+ * @param cacheTtl How long a user, profile or tier is reused before it is fetched again.
  */
 @ConfigurationProperties(prefix = "krizaka.users.client")
 public record UsersClientProperties(
     String baseUrl,
     String serviceSecret,
     String serviceName,
-    @DefaultValue("PT60S") Duration cacheTtl) {
+    @DefaultValue("60s") Duration cacheTtl) {
 
   /** Refuses an incomplete client: a call that cannot authenticate fails at startup, not later. */
   public UsersClientProperties {
