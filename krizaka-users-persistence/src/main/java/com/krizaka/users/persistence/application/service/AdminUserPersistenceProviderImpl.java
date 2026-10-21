@@ -122,13 +122,16 @@ class AdminUserPersistenceProviderImpl implements AdminUserPersistenceProvider {
   public void appendAudit(
       String actorId, String actorLabel, String action, String targetId, String detail) {
     em.createNativeQuery(
-            "INSERT INTO admin_audit (actor_id, actor_label, action, target_id, detail)"
-                + " VALUES (:actor, :label, :action, :target, :detail)")
+            "INSERT INTO admin_audit (actor_id, actor_label, action, target_id, detail, request_id)"
+                + " VALUES (:actor, :label, :action, :target, :detail, :request)")
         .setParameter("actor", actorId)
         .setParameter("label", actorLabel)
         .setParameter("action", action)
         .setParameter("target", targetId)
         .setParameter("detail", detail)
+        // The request of the call (ADR-085): set in the logging context by the web layer, null
+        // outside a request.
+        .setParameter("request", org.slf4j.MDC.get("requestId"))
         .executeUpdate();
   }
 
@@ -139,7 +142,7 @@ class AdminUserPersistenceProviderImpl implements AdminUserPersistenceProvider {
     String where = targetId == null ? "" : " WHERE target_id = :t OR actor_id = :t";
     var query =
         em.createNativeQuery(
-                "SELECT id, at, actor_id, actor_label, action, target_id, detail FROM admin_audit"
+                "SELECT id, at, actor_id, actor_label, action, target_id, detail, request_id FROM admin_audit"
                     + where
                     + " ORDER BY at DESC, id DESC LIMIT :limit")
             .setParameter("limit", limit);
@@ -157,7 +160,8 @@ class AdminUserPersistenceProviderImpl implements AdminUserPersistenceProvider {
                     (String) r[3],
                     (String) r[4],
                     (String) r[5],
-                    (String) r[6]))
+                    (String) r[6],
+                    (String) r[7]))
         .toList();
   }
 

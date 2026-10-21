@@ -10,4 +10,5 @@ public record AdminAuditRow(
     String actorLabel,
     String action,
     String targetId,
-    String detail) {}
+    String detail,
+    String requestId) {}

@@ -83,7 +83,13 @@ class AdminUserRepositoryAdapter implements AdminUserRepositoryPort {
         .map(
             r ->
                 new AdminAuditEntry(
-                    r.id(), r.at(), r.actorLabel(), r.action(), r.targetId(), r.detail()))
+                    r.id(),
+                    r.at(),
+                    r.actorLabel(),
+                    r.action(),
+                    r.targetId(),
+                    r.detail(),
+                    r.requestId()))
         .toList();
   }
 
