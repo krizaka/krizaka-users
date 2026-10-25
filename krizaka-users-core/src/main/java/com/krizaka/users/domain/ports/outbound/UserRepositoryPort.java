@@ -60,6 +60,26 @@ public interface UserRepositoryPort {
   User create(User user, String passwordHash);
 
   /**
+   * Creates a user who signs in with an external identity provider: no password, and the provider's
+   * identity stored with the user so that the next sign-in finds the same account.
+   *
+   * @param user The User domain record.
+   * @param provider The provider name (e.g. "google", "github").
+   * @param providerId The provider's stable identifier of the person (Google {@code sub}, GitHub
+   *     id).
+   * @return The created User record.
+   */
+  User createFederated(User user, String provider, String providerId);
+
+  /**
+   * Whether a user already has this username.
+   *
+   * @param username The candidate username.
+   * @return {@code true} if it is taken.
+   */
+  boolean usernameTaken(String username);
+
+  /**
    * Updates the password hash for a user identified by email.
    *
    * <p>Also updates the {@code password_changed_at} timestamp to enable session invalidation.

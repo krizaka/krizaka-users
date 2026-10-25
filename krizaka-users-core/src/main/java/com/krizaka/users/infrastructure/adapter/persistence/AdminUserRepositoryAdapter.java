@@ -78,12 +78,30 @@ class AdminUserRepositoryAdapter implements AdminUserRepositoryPort {
   }
 
   @Override
+  public void appendAuditOutcome(
+      String actorId,
+      String actorLabel,
+      String action,
+      String targetId,
+      String detail,
+      String outcome) {
+    provider.appendAuditOutcome(actorId, actorLabel, action, targetId, detail, outcome);
+  }
+
+  @Override
   public List<AdminAuditEntry> recentAudit(String targetId, int limit) {
     return provider.recentAudit(targetId, limit).stream()
         .map(
             r ->
                 new AdminAuditEntry(
-                    r.id(), r.at(), r.actorLabel(), r.action(), r.targetId(), r.detail()))
+                    r.id(),
+                    r.at(),
+                    r.actorLabel(),
+                    r.action(),
+                    r.targetId(),
+                    r.detail(),
+                    r.requestId(),
+                    r.outcome()))
         .toList();
   }
 

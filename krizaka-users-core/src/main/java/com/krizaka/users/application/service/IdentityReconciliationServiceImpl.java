@@ -8,6 +8,8 @@ import com.krizaka.users.domain.ports.outbound.AuthorityRepositoryPort;
 import com.krizaka.users.domain.ports.outbound.OAuth2ProviderVerifier;
 import com.krizaka.users.domain.ports.outbound.UserRepositoryPort;
 import com.krizaka.users.infrastructure.config.IdentityInfrastructureProperties;
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +31,12 @@ class IdentityReconciliationServiceImpl implements IdentityReconciliationService
 
   private static final Logger logger =
       LoggerFactory.getLogger(IdentityReconciliationServiceImpl.class);
+
+  // @fixed: the users.username column is VARCHAR(100); the base leaves room for the suffix.
+  private static final int USERNAME_BASE_MAX = 80;
+  // @fixed: tries before a UUID suffix; a technical bound, not a business setting.
+  private static final int USERNAME_ATTEMPTS = 5;
+  private static final SecureRandom RANDOM = new SecureRandom();
 
   private final List<OAuth2ProviderVerifier> verifiers;
   private final UserRepositoryPort userRepository;
@@ -89,7 +97,7 @@ class IdentityReconciliationServiceImpl implements IdentityReconciliationService
     User newUser =
         new User(
             UUID.fromString(userId),
-            profile.name(),
+            freeUsername(displayName(profile)),
             profile.email(),
             true,
             Set.of("ROLE_USER"),
@@ -99,7 +107,8 @@ class IdentityReconciliationServiceImpl implements IdentityReconciliationService
 
     User savedUser;
     try {
-      savedUser = userRepository.create(newUser, null);
+      // The provider identity is stored with the user: the next sign-in finds this account by it.
+      savedUser = userRepository.createFederated(newUser, provider, profile.providerId());
     } catch (DataIntegrityViolationException ex) {
       logger.warn(
           "Concurrent federated user creation detected for provider={}, providerId={}. "
@@ -116,13 +125,41 @@ class IdentityReconciliationServiceImpl implements IdentityReconciliationService
 
     authorityRepository.saveAuthority(userId, "ROLE_USER");
 
-    logger.info(
-        "Provisioned new federated user: provider={}, email={}, id={}",
-        provider,
-        profile.email(),
-        userId);
+    logger.info("Provisioned new federated user: provider={}, id={}", provider, userId);
 
     return savedUser;
+  }
+
+  /**
+   * The name a person is shown under: the provider's display name, or — when the provider gives
+   * none and the profile fell back to the e-mail address — the address's local part, so that an
+   * e-mail address never becomes a public username.
+   */
+  private static String displayName(ExtractedProfile profile) {
+    String name = profile.name() == null ? "" : profile.name().strip().replaceAll("\\s+", " ");
+    if (name.isEmpty() || name.equalsIgnoreCase(profile.email())) {
+      String email = profile.email();
+      int at = email.indexOf('@');
+      name = at > 0 ? email.substring(0, at) : "member";
+    }
+    return name.length() > USERNAME_BASE_MAX ? name.substring(0, USERNAME_BASE_MAX).strip() : name;
+  }
+
+  /**
+   * The display name when it is free, else the name with a short random suffix ("Alex
+   * Martin-7f3a").
+   */
+  private String freeUsername(String base) {
+    if (!userRepository.usernameTaken(base)) {
+      return base;
+    }
+    for (int attempt = 0; attempt < USERNAME_ATTEMPTS; attempt++) {
+      String candidate = base + "-" + HexFormat.of().toHexDigits((short) RANDOM.nextInt(1 << 16));
+      if (!userRepository.usernameTaken(candidate)) {
+        return candidate;
+      }
+    }
+    return base + "-" + UUID.randomUUID().toString().substring(0, 8);
   }
 
   private OAuth2ProviderVerifier resolveVerifier(String provider) {

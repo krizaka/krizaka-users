@@ -17,6 +17,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -98,7 +99,7 @@ class IdentityReconciliationServiceImplTest {
     User result = service.reconcile("google", "id-token");
 
     assertEquals(existingUser, result);
-    verify(userRepository, never()).create(any(), any());
+    verify(userRepository, never()).createFederated(any(), any(), any());
     verify(authorityRepository, never()).saveAuthority(any(), any());
   }
 
@@ -112,12 +113,13 @@ class IdentityReconciliationServiceImplTest {
     when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
     when(userRepository.findByProviderAndProviderId("google", "google-id"))
         .thenReturn(Optional.empty());
-    when(userRepository.create(any(User.class), eq(null))).thenReturn(savedUser);
+    when(userRepository.createFederated(any(User.class), eq("google"), eq("google-id")))
+        .thenReturn(savedUser);
 
     User result = service.reconcile("google", "id-token");
 
     assertEquals(savedUser, result);
-    verify(userRepository).create(any(User.class), eq(null));
+    verify(userRepository).createFederated(any(User.class), eq("google"), eq("google-id"));
     verify(authorityRepository).saveAuthority(anyString(), eq("ROLE_USER"));
   }
 
@@ -132,7 +134,7 @@ class IdentityReconciliationServiceImplTest {
     when(userRepository.findByProviderAndProviderId("google", "google-id"))
         .thenReturn(Optional.empty()) // first lookup: not found
         .thenReturn(Optional.of(existingUser)); // fallback lookup: found
-    when(userRepository.create(any(User.class), eq(null)))
+    when(userRepository.createFederated(any(User.class), eq("google"), eq("google-id")))
         .thenThrow(new DataIntegrityViolationException("duplicate key"));
 
     User result = service.reconcile("google", "id-token");
@@ -150,7 +152,7 @@ class IdentityReconciliationServiceImplTest {
     when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
     when(userRepository.findByProviderAndProviderId("google", "google-id"))
         .thenReturn(Optional.empty());
-    when(userRepository.create(any(User.class), eq(null)))
+    when(userRepository.createFederated(any(User.class), eq("google"), eq("google-id")))
         .thenThrow(new DataIntegrityViolationException("duplicate key"));
 
     assertThrows(IllegalStateException.class, () -> service.reconcile("google", "id-token"));
@@ -168,7 +170,7 @@ class IdentityReconciliationServiceImplTest {
     IdentityReconciliationServiceImpl closed = closedService();
     assertThrows(RegistrationClosedException.class, () -> closed.reconcile("google", "id-token"));
 
-    verify(userRepository, never()).create(any(), any());
+    verify(userRepository, never()).createFederated(any(), any(), any());
     verify(authorityRepository, never()).saveAuthority(any(), any());
   }
 
@@ -183,5 +185,63 @@ class IdentityReconciliationServiceImplTest {
         .thenReturn(Optional.of(existingUser));
 
     assertEquals(existingUser, closedService().reconcile("google", "id-token"));
+  }
+
+  // A federated user must be stored WITH its provider identity, or the next sign-in of the same
+  // person finds nobody and fails on the unique username.
+  @Test
+  void reconcile_newUser_isStoredWithItsProviderAndProviderId() {
+    ExtractedProfile profile =
+        new ExtractedProfile("test@example.com", "google-id", "Test User", null);
+    when(googleVerifier.verifyAndExtract("id-token")).thenReturn(profile);
+    when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
+    when(userRepository.findByProviderAndProviderId("google", "google-id"))
+        .thenReturn(Optional.empty());
+    when(userRepository.createFederated(any(User.class), eq("google"), eq("google-id")))
+        .thenReturn(Persona.freeUser());
+
+    service.reconcile("google", "id-token");
+
+    verify(userRepository).createFederated(any(User.class), eq("google"), eq("google-id"));
+    verify(userRepository, never()).create(any(), any());
+  }
+
+  // Two people with the same display name can both sign in.
+  @Test
+  void reconcile_newUser_takesAFreeUsernameWhenTheDisplayNameIsTaken() {
+    ExtractedProfile profile =
+        new ExtractedProfile("alex@example.com", "google-id", "Alex Martin", null);
+    when(googleVerifier.verifyAndExtract("id-token")).thenReturn(profile);
+    when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
+    when(userRepository.findByProviderAndProviderId("google", "google-id"))
+        .thenReturn(Optional.empty());
+    when(userRepository.usernameTaken("Alex Martin")).thenReturn(true);
+    when(userRepository.usernameTaken(argThat(u -> !"Alex Martin".equals(u)))).thenReturn(false);
+    ArgumentCaptor<User> created = ArgumentCaptor.forClass(User.class);
+    when(userRepository.createFederated(created.capture(), eq("google"), eq("google-id")))
+        .thenReturn(Persona.freeUser());
+
+    service.reconcile("google", "id-token");
+
+    assertTrue(created.getValue().username().startsWith("Alex Martin-"));
+    assertTrue(created.getValue().username().length() <= 100);
+  }
+
+  // A provider that gives no name must not turn the e-mail address into a public username.
+  @Test
+  void reconcile_newUserWithoutAName_neverUsesTheEmailAsUsername() {
+    ExtractedProfile profile =
+        new ExtractedProfile("private.person@example.com", "gh-1", null, null);
+    when(googleVerifier.verifyAndExtract("id-token")).thenReturn(profile);
+    when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
+    when(userRepository.findByProviderAndProviderId("google", "gh-1")).thenReturn(Optional.empty());
+    ArgumentCaptor<User> created = ArgumentCaptor.forClass(User.class);
+    when(userRepository.createFederated(created.capture(), eq("google"), eq("gh-1")))
+        .thenReturn(Persona.freeUser());
+
+    service.reconcile("google", "id-token");
+
+    assertEquals("private.person", created.getValue().username());
+    assertEquals("private.person@example.com", created.getValue().email());
   }
 }

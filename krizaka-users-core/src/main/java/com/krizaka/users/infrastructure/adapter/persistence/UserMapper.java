@@ -47,4 +47,21 @@ final class UserMapper {
         user.rateLimitTier(),
         null);
   }
+
+  /** Maps a domain User signing in through an external provider (no password) to UserDto. */
+  static UserDto toFederatedDto(User user, String provider, String providerId) {
+    return new UserDto(
+        user.id().toString(),
+        user.username(),
+        null,
+        user.email(),
+        user.enabled(),
+        user.preferences(),
+        user.authorities(),
+        user.activeInterceptions(),
+        provider,
+        providerId,
+        user.rateLimitTier(),
+        null);
+  }
 }

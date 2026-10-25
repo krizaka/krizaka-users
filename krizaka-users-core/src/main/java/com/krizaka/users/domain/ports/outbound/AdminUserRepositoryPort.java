@@ -25,6 +25,18 @@ public interface AdminUserRepositoryPort {
   void appendAudit(
       String actorId, String actorLabel, String action, String targetId, String detail);
 
+  /**
+   * An audit line for an action that did not happen: {@code outcome} is {@code refused} or {@code
+   * failed}.
+   */
+  void appendAuditOutcome(
+      String actorId,
+      String actorLabel,
+      String action,
+      String targetId,
+      String detail,
+      String outcome);
+
   List<AdminAuditEntry> recentAudit(String targetId, int limit);
 
   void anonymiseAudit(String actorId);

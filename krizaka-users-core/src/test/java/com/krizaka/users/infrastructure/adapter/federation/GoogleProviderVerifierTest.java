@@ -2,42 +2,47 @@ package com.krizaka.users.infrastructure.adapter.federation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 import com.krizaka.users.domain.model.ExtractedProfile;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
+/**
+ * Real RS256 tokens signed with a throw-away key: the verifier checks the signature locally (no
+ * tokeninfo round trip — krizaka-users#42), so a forged or altered token is refused for the right
+ * reason.
+ */
 class GoogleProviderVerifierTest {
 
-  private RestClient restClient;
-  private RestClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;
-  private RestClient.RequestHeadersSpec<?> requestHeadersSpec;
-  private RestClient.ResponseSpec responseSpec;
+  private static final String CLIENT_ID = "1234-krizaka.apps.googleusercontent.com";
+
+  private RSAPrivateKey signingKey;
   private GoogleProviderVerifier verifier;
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
-  void setUp() {
-    restClient = mock(RestClient.class);
-    requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
-    requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
-    responseSpec = mock(RestClient.ResponseSpec.class);
-
-    doReturn(requestHeadersUriSpec).when(restClient).get();
-    doReturn(requestHeadersSpec).when(requestHeadersUriSpec).uri(any(String.class));
-    doReturn(requestHeadersSpec).when(requestHeadersSpec).accept(any(MediaType.class));
-    doReturn(responseSpec).when(requestHeadersSpec).retrieve();
-
-    verifier = new GoogleProviderVerifier(restClient, objectMapper);
+  void setUp() throws Exception {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+    generator.initialize(2048);
+    KeyPair pair = generator.generateKeyPair();
+    signingKey = (RSAPrivateKey) pair.getPrivate();
+    NimbusJwtDecoder decoder =
+        NimbusJwtDecoder.withPublicKey((RSAPublicKey) pair.getPublic()).build();
+    decoder.setJwtValidator(GoogleProviderVerifier.validator(CLIENT_ID));
+    verifier = new GoogleProviderVerifier(decoder, CLIENT_ID);
   }
 
   @Test
@@ -57,13 +62,8 @@ class GoogleProviderVerifierTest {
   }
 
   @Test
-  void doVerifyAndExtract_validToken_returnsExtractedProfile() {
-    String jwt = createJwt("accounts.google.com", futureEpoch());
-    ObjectNode tokenInfo = createTokenInfoResponse();
-
-    when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
-
-    ExtractedProfile profile = verifier.doVerifyAndExtract(jwt);
+  void validToken_returnsExtractedProfile() throws Exception {
+    ExtractedProfile profile = verifier.doVerifyAndExtract(token(claims().build(), signingKey));
 
     assertThat(profile.email()).isEqualTo("user@gmail.com");
     assertThat(profile.providerId()).isEqualTo("google-sub-123");
@@ -72,20 +72,27 @@ class GoogleProviderVerifierTest {
   }
 
   @Test
-  void doVerifyAndExtract_httpsIssuer_succeeds() {
-    String jwt = createJwt("https://accounts.google.com", futureEpoch());
-    ObjectNode tokenInfo = createTokenInfoResponse();
+  void httpsIssuer_succeeds() throws Exception {
+    JWTClaimsSet claims = claims().issuer("https://accounts.google.com").build();
 
-    when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
-
-    ExtractedProfile profile = verifier.doVerifyAndExtract(jwt);
-
-    assertThat(profile.email()).isEqualTo("user@gmail.com");
+    assertThat(verifier.doVerifyAndExtract(token(claims, signingKey)).email())
+        .isEqualTo("user@gmail.com");
   }
 
   @Test
-  void doVerifyAndExtract_invalidIssuer_throwsIllegalArgument() {
-    String jwt = createJwt("evil.com", futureEpoch());
+  void aTokenSignedWithAnotherKeyIsRefused() throws Exception {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+    generator.initialize(2048);
+    RSAPrivateKey forger = (RSAPrivateKey) generator.generateKeyPair().getPrivate();
+
+    assertThatThrownBy(() -> verifier.doVerifyAndExtract(token(claims().build(), forger)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Google ID token verification failed");
+  }
+
+  @Test
+  void invalidIssuer_isRefused() throws Exception {
+    String jwt = token(claims().issuer("evil.com").build(), signingKey);
 
     assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
         .isInstanceOf(IllegalArgumentException.class)
@@ -93,79 +100,75 @@ class GoogleProviderVerifierTest {
   }
 
   @Test
-  void doVerifyAndExtract_expiredToken_throwsIllegalArgument() {
-    String jwt = createJwt("accounts.google.com", (System.currentTimeMillis() / 1000) - 3600);
+  void expiredToken_isRefused() throws Exception {
+    String jwt =
+        token(
+            claims().expirationTime(Date.from(Instant.now().minusSeconds(3600))).build(),
+            signingKey);
 
     assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Google ID token has expired");
+        .hasMessageContaining("expired");
   }
 
+  // Finding 2 (ADR-001): a Google ID token issued to another application must be refused.
   @Test
-  void doVerifyAndExtract_invalidJwtFormat_throwsIllegalArgument() {
-    assertThatThrownBy(() -> verifier.doVerifyAndExtract("not-a-jwt"))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Invalid JWT format");
-  }
-
-  @Test
-  void doVerifyAndExtract_corruptedPayload_throwsIllegalArgument() {
-    assertThatThrownBy(() -> verifier.doVerifyAndExtract("header.!!!invalid!!!.signature"))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Failed to decode Google JWT payload");
-  }
-
-  @Test
-  void doVerifyAndExtract_tokenInfoNull_throwsIllegalArgument() {
-    String jwt = createJwt("accounts.google.com", futureEpoch());
-
-    when(responseSpec.body(JsonNode.class)).thenReturn(null);
+  void tokenForAnotherApplication_isRefused() throws Exception {
+    String jwt =
+        token(
+            claims().audience("someone-elses-app.apps.googleusercontent.com").build(), signingKey);
 
     assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Google tokeninfo API returned null response");
+        .hasMessageContaining("audience");
   }
 
   @Test
-  void doVerifyAndExtract_tokenInfoError_throwsIllegalArgument() {
-    String jwt = createJwt("accounts.google.com", futureEpoch());
-
-    ObjectNode errorResponse = objectMapper.createObjectNode();
-    errorResponse.put("error_description", "Invalid token");
-
-    when(responseSpec.body(JsonNode.class)).thenReturn(errorResponse);
+  void unverifiedEmail_isRefused() throws Exception {
+    String jwt = token(claims().claim("email_verified", false).build(), signingKey);
 
     assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Google token verification failed: Invalid token");
+        .hasMessageContaining("verified");
   }
 
   @Test
-  void doVerifyAndExtract_missingSub_throwsIllegalArgument() {
-    String jwt = createJwt("accounts.google.com", futureEpoch());
+  void missingSub_isRefused() throws Exception {
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("accounts.google.com")
+            .audience(CLIENT_ID)
+            .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
+            .claim("email", "user@gmail.com")
+            .claim("email_verified", true)
+            .build();
 
-    ObjectNode tokenInfo = objectMapper.createObjectNode();
-    tokenInfo.put("email", "user@gmail.com");
-
-    when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
-
-    assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
+    assertThatThrownBy(() -> verifier.doVerifyAndExtract(token(claims, signingKey)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("missing required field: Google user ID");
   }
 
   @Test
-  void doVerifyAndExtract_missingEmail_throwsIllegalArgument() {
-    String jwt = createJwt("accounts.google.com", futureEpoch());
+  void missingEmail_isRefused() throws Exception {
+    JWTClaimsSet claims =
+        new JWTClaimsSet.Builder()
+            .issuer("accounts.google.com")
+            .audience(CLIENT_ID)
+            .subject("google-sub-123")
+            .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
+            .claim("email_verified", true)
+            .build();
 
-    ObjectNode tokenInfo = objectMapper.createObjectNode();
-    tokenInfo.put("sub", "google-sub-123");
-
-    when(responseSpec.body(JsonNode.class)).thenReturn(tokenInfo);
-
-    assertThatThrownBy(() -> verifier.doVerifyAndExtract(jwt))
+    assertThatThrownBy(() -> verifier.doVerifyAndExtract(token(claims, signingKey)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("missing required field: email");
+  }
+
+  @Test
+  void notAJwt_isRefused() {
+    assertThatThrownBy(() -> verifier.doVerifyAndExtract("not-a-jwt"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Google ID token verification failed");
   }
 
   @Test
@@ -182,40 +185,21 @@ class GoogleProviderVerifierTest {
         .hasMessageContaining("Google ID token cannot be null or empty");
   }
 
-  // --- Helpers ---
-
-  private String createJwt(String issuer, long exp) {
-    String header =
-        Base64.getUrlEncoder()
-            .withoutPadding()
-            .encodeToString("{\"alg\":\"RS256\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
-    String payload =
-        Base64.getUrlEncoder()
-            .withoutPadding()
-            .encodeToString(
-                ("{\"iss\":\""
-                        + issuer
-                        + "\",\"exp\":"
-                        + exp
-                        + ",\"sub\":\"google-sub-123\",\"email\":\"user@gmail.com\"}")
-                    .getBytes(StandardCharsets.UTF_8));
-    String signature =
-        Base64.getUrlEncoder()
-            .withoutPadding()
-            .encodeToString("fake-signature".getBytes(StandardCharsets.UTF_8));
-    return header + "." + payload + "." + signature;
+  private static JWTClaimsSet.Builder claims() {
+    return new JWTClaimsSet.Builder()
+        .issuer("accounts.google.com")
+        .audience(List.of(CLIENT_ID))
+        .subject("google-sub-123")
+        .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
+        .claim("email", "user@gmail.com")
+        .claim("email_verified", true)
+        .claim("name", "Test User")
+        .claim("picture", "https://lh3.googleusercontent.com/photo");
   }
 
-  private long futureEpoch() {
-    return (System.currentTimeMillis() / 1000) + 3600;
-  }
-
-  private ObjectNode createTokenInfoResponse() {
-    ObjectNode tokenInfo = objectMapper.createObjectNode();
-    tokenInfo.put("sub", "google-sub-123");
-    tokenInfo.put("email", "user@gmail.com");
-    tokenInfo.put("name", "Test User");
-    tokenInfo.put("picture", "https://lh3.googleusercontent.com/photo");
-    return tokenInfo;
+  private static String token(JWTClaimsSet claims, RSAPrivateKey key) throws JOSEException {
+    SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claims);
+    jwt.sign(new RSASSASigner(key));
+    return jwt.serialize();
   }
 }

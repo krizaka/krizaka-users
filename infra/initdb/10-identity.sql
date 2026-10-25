@@ -138,7 +138,9 @@ CREATE TABLE admin_audit (
     actor_label VARCHAR(255) NOT NULL,
     action VARCHAR(60) NOT NULL,
     target_id VARCHAR(255),
-    detail TEXT
+    detail TEXT,
+    request_id VARCHAR(64),
+    outcome VARCHAR(12) NOT NULL DEFAULT 'ok'
 );
 CREATE INDEX idx_admin_audit_at ON admin_audit(at DESC);
 CREATE INDEX idx_admin_audit_target ON admin_audit(target_id);
@@ -168,7 +170,8 @@ CREATE INDEX idx_identity_outbox_pending ON identity_outbox(next_attempt_at) WHE
 INSERT INTO rate_limit_tiers (id, capacity, refill_tokens, refill_seconds) VALUES
 ('free', 60, 60, 60),
 ('premium', 200, 200, 60),
-('admin', 1000, 1000, 60)
+('admin', 1000, 1000, 60),
+('service', 1000, 1000, 60)
 ON CONFLICT (id) DO NOTHING;
 
 
@@ -177,6 +180,7 @@ INSERT INTO rate_limits (tier_key, requests_per_minute, concurrent_jobs, is_defa
 ('free', 60, 1, TRUE),
 ('premium', 200, 5, FALSE),
 ('admin', 1000, 20, FALSE),
-('enterprise', 1000, 20, FALSE)
+('enterprise', 1000, 20, FALSE),
+('service', 1000, 20, FALSE)
 ON CONFLICT (tier_key) DO NOTHING;
 
