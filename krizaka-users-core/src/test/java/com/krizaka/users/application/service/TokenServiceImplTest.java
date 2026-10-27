@@ -80,4 +80,63 @@ class TokenServiceImplTest {
   void rejectsNullUser() {
     assertThrows(NullPointerException.class, () -> service.issue(null));
   }
+
+  @Test
+  @DisplayName("With a signing key configured the token header is ES256 and names the kid")
+  void headerIsEs256WithKid() throws Exception {
+    var generator = java.security.KeyPairGenerator.getInstance("EC");
+    generator.initialize(new java.security.spec.ECGenParameterSpec("secp256r1"));
+    var pair = generator.generateKeyPair();
+    var signing =
+        new JwtProperties.Signing(
+            pem("PRIVATE KEY", pair.getPrivate().getEncoded()),
+            pem("PUBLIC KEY", pair.getPublic().getEncoded()),
+            "k7",
+            Map.of());
+    var props = new JwtProperties(SECRET, "https://id.test", Duration.ofMinutes(30), signing);
+    var config = new com.krizaka.users.infrastructure.config.JwtConfig();
+    var keys = config.issuerKeys(props);
+    var svc = new TokenServiceImpl(config.identityJwtEncoder(props, keys), props);
+
+    String token =
+        svc.issue(
+            new User(
+                UUID.randomUUID(), "u", "u@x.io", true, Set.of("ROLE_USER"), Map.of(), List.of()));
+
+    Jwt jwt = config.identityJwtDecoder(props, keys).decode(token);
+    assertThat(jwt.getHeaders()).containsEntry("alg", "ES256").containsEntry("kid", "k7");
+  }
+
+  @Test
+  @DisplayName(
+      "A signing block bound from empty defaults stays on HS256, as in the deployed context")
+  void blankSigningBlockStaysHs256() {
+    var props =
+        new JwtProperties(
+            SECRET,
+            "krizaka-users",
+            Duration.ofMinutes(30),
+            new JwtProperties.Signing("", "", "", Map.of()));
+    var svc = new TokenServiceImpl(new NimbusJwtEncoder(new ImmutableSecret<>(key)), props);
+
+    String token =
+        svc.issue(
+            new User(
+                UUID.randomUUID(), "u", "u@x.io", true, Set.of("ROLE_USER"), Map.of(), List.of()));
+
+    Jwt jwt =
+        NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build().decode(token);
+    assertThat(jwt.getHeaders()).containsEntry("alg", "HS256");
+  }
+
+  private static String pem(String type, byte[] der) {
+    return "-----BEGIN "
+        + type
+        + "-----\n"
+        + java.util.Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8))
+            .encodeToString(der)
+        + "\n-----END "
+        + type
+        + "-----";
+  }
 }
