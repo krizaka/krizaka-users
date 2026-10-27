@@ -36,6 +36,18 @@ class ApiKeyPersistenceProviderImpl implements ApiKeyPersistenceProvider {
 
   @Override
   @Transactional(readOnly = true)
+  public List<ApiKeyDto> findByUserIds(java.util.Collection<String> userIds) {
+    Objects.requireNonNull(userIds, "userIds cannot be null");
+    if (userIds.isEmpty()) {
+      return List.of();
+    }
+    return repository.findByUserIdInOrderByCreatedAtDesc(userIds).stream()
+        .map(ApiKeyPersistenceProviderImpl::toDto)
+        .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public long countByUserId(String userId) {
     Objects.requireNonNull(userId, USER_ID_NULL);
     return repository.countByUserId(userId);

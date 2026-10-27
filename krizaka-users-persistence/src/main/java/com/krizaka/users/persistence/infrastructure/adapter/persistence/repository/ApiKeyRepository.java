@@ -2,6 +2,7 @@ package com.krizaka.users.persistence.infrastructure.adapter.persistence.reposit
 
 import com.krizaka.users.persistence.infrastructure.adapter.persistence.entity.ApiKeyEntity;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -56,4 +57,12 @@ public interface ApiKeyRepository extends JpaRepository<ApiKeyEntity, String> {
   @Modifying
   @Query("UPDATE ApiKeyEntity a SET a.lastUsedAt = :lastUsedAt WHERE a.id = :id")
   void touchLastUsed(@Param("id") String id, @Param("lastUsedAt") Instant lastUsedAt);
+
+  /**
+   * Retrieves the API keys owned by any of the given users, most recent first.
+   *
+   * @param userIds The owning user IDs.
+   * @return The keys of those users.
+   */
+  List<ApiKeyEntity> findByUserIdInOrderByCreatedAtDesc(Collection<String> userIds);
 }
