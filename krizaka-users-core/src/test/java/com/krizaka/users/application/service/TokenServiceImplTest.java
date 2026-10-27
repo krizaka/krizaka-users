@@ -107,6 +107,28 @@ class TokenServiceImplTest {
     assertThat(jwt.getHeaders()).containsEntry("alg", "ES256").containsEntry("kid", "k7");
   }
 
+  @Test
+  @DisplayName(
+      "A signing block bound from empty defaults stays on HS256, as in the deployed context")
+  void blankSigningBlockStaysHs256() {
+    var props =
+        new JwtProperties(
+            SECRET,
+            "krizaka-users",
+            Duration.ofMinutes(30),
+            new JwtProperties.Signing("", "", "", Map.of()));
+    var svc = new TokenServiceImpl(new NimbusJwtEncoder(new ImmutableSecret<>(key)), props);
+
+    String token =
+        svc.issue(
+            new User(
+                UUID.randomUUID(), "u", "u@x.io", true, Set.of("ROLE_USER"), Map.of(), List.of()));
+
+    Jwt jwt =
+        NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build().decode(token);
+    assertThat(jwt.getHeaders()).containsEntry("alg", "HS256");
+  }
+
   private static String pem(String type, byte[] der) {
     return "-----BEGIN "
         + type

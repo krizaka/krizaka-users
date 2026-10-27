@@ -62,6 +62,20 @@ public record JwtProperties(
       retired = retired == null ? Map.of() : Map.copyOf(retired);
     }
 
+    /**
+     * Whether any issuer key setting is present. Empty environment defaults bind as blank values,
+     * so a present-but-blank block is not a configuration; a partial one is, and fails at startup.
+     *
+     * @return {@code true} when at least one of private key, public key or key id is non-blank
+     */
+    public boolean configured() {
+      return !isBlank(privateKey) || !isBlank(publicKey) || !isBlank(keyId);
+    }
+
+    private static boolean isBlank(String value) {
+      return value == null || value.isBlank();
+    }
+
     @Override
     public String toString() {
       return "Signing[keyId=" + keyId + ", retired=" + retired.keySet() + ", privateKey=***]";

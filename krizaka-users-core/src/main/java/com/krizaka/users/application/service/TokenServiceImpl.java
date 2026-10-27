@@ -47,7 +47,7 @@ class TokenServiceImpl implements TokenService {
 
   /** ES256 naming the kid when the issuer key is configured (ADR-001), legacy HS256 otherwise. */
   private JwsHeader header() {
-    if (properties.signing() == null) {
+    if (properties.signing() == null || !properties.signing().configured()) {
       return JwsHeader.with(MacAlgorithm.HS256).build();
     }
     return JwsHeader.with(SignatureAlgorithm.ES256).keyId(properties.signing().keyId()).build();
