@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.krizaka.users.infrastructure.adapter.rest.JwksController;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
@@ -99,7 +100,7 @@ class IssuerSigningTest {
     var body = new JwksController(config.issuerKeys(p)).jwks().getBody();
 
     var set = JWKSet.parse(new com.nimbusds.jose.shaded.gson.Gson().toJson(body));
-    assertThat(set.getKeys()).extracting(k -> k.getKeyID()).containsExactlyInAnyOrder("k1", "k2");
+    assertThat(set.getKeys()).extracting(JWK::getKeyID).containsExactlyInAnyOrder("k1", "k2");
     assertThat(set.getKeys()).allSatisfy(k -> assertThat(k.isPrivate()).isFalse());
     assertThat(String.valueOf(body)).doesNotContain("\"d\"").doesNotContain("PRIVATE");
   }
