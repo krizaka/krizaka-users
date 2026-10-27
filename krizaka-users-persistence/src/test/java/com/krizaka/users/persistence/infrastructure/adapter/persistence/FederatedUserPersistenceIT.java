@@ -55,7 +55,8 @@ class FederatedUserPersistenceIT extends AbstractContainerIntegrationTest {
                 postgres().getJdbcUrl(), postgres().getUsername(), postgres().getPassword());
         var statement = connection.createStatement()) {
       statement.execute(
-          "DROP TABLE IF EXISTS identity_outbox, admin_audit, rate_limits, password_resets,"
+          "DROP TABLE IF EXISTS organization_members, organizations, identity_outbox, admin_audit,"
+              + " rate_limits, password_resets,"
               + " api_keys, user_credentials, user_profiles, user_interceptions,"
               + " verification_tokens, authorities, users, rate_limit_tiers CASCADE");
       statement.execute(schema);

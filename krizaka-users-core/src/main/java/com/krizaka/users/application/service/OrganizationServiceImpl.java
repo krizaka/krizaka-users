@@ -34,6 +34,8 @@ class OrganizationServiceImpl implements OrganizationService {
   private static final Logger logger = LoggerFactory.getLogger(OrganizationServiceImpl.class);
   private static final Pattern SLUG = Pattern.compile("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$");
   private static final int MAX_NAME_LENGTH = 150;
+  private static final String ACTOR_REQUIRED = "actor must not be null";
+  private static final String USER_ID_REQUIRED = "userId must not be null";
 
   private final OrganizationRepositoryPort organizations;
   private final UserRepositoryPort users;
@@ -50,7 +52,7 @@ class OrganizationServiceImpl implements OrganizationService {
 
   @Override
   public Organization create(OrganizationActor actor, String slug, String name) {
-    Objects.requireNonNull(actor, "actor must not be null");
+    Objects.requireNonNull(actor, ACTOR_REQUIRED);
     String cleanSlug = slug == null ? "" : slug.strip();
     if (!SLUG.matcher(cleanSlug).matches()) {
       throw new InvalidRequestException(
@@ -75,7 +77,7 @@ class OrganizationServiceImpl implements OrganizationService {
 
   @Override
   public List<Organization> listMine(OrganizationActor actor) {
-    Objects.requireNonNull(actor, "actor must not be null");
+    Objects.requireNonNull(actor, ACTOR_REQUIRED);
     return organizations.findByMember(actor.userId());
   }
 
@@ -96,7 +98,7 @@ class OrganizationServiceImpl implements OrganizationService {
   @Override
   public OrganizationMember addMember(
       OrganizationActor actor, String organizationId, String userId, OrganizationRole role) {
-    Objects.requireNonNull(userId, "userId must not be null");
+    Objects.requireNonNull(userId, USER_ID_REQUIRED);
     Objects.requireNonNull(role, "role must not be null");
     organization(organizationId);
     OrganizationRole actorRole = requireManager(actor, organizationId);
@@ -126,7 +128,7 @@ class OrganizationServiceImpl implements OrganizationService {
   @Override
   public OrganizationMember attachServiceAccount(
       OrganizationActor actor, String organizationId, String userId) {
-    Objects.requireNonNull(userId, "userId must not be null");
+    Objects.requireNonNull(userId, USER_ID_REQUIRED);
     organization(organizationId);
     requireManager(actor, organizationId);
     User account = users.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
@@ -143,7 +145,7 @@ class OrganizationServiceImpl implements OrganizationService {
 
   @Override
   public boolean removeMember(OrganizationActor actor, String organizationId, String userId) {
-    Objects.requireNonNull(userId, "userId must not be null");
+    Objects.requireNonNull(userId, USER_ID_REQUIRED);
     organization(organizationId);
     OrganizationRole actorRole = requireManager(actor, organizationId);
     Optional<OrganizationMember> target = organizations.findMember(organizationId, userId);
@@ -210,7 +212,7 @@ class OrganizationServiceImpl implements OrganizationService {
 
   /** A member sees the organization; anyone else is told it does not exist. */
   private void requireMember(OrganizationActor actor, String organizationId) {
-    Objects.requireNonNull(actor, "actor must not be null");
+    Objects.requireNonNull(actor, ACTOR_REQUIRED);
     if (actor.platformAdmin()) {
       return;
     }
@@ -221,7 +223,7 @@ class OrganizationServiceImpl implements OrganizationService {
 
   /** The actor's role, when it lets them manage; a member who may not is refused. */
   private OrganizationRole requireManager(OrganizationActor actor, String organizationId) {
-    Objects.requireNonNull(actor, "actor must not be null");
+    Objects.requireNonNull(actor, ACTOR_REQUIRED);
     Optional<OrganizationMember> membership =
         organizations.findMember(organizationId, actor.userId());
     if (actor.platformAdmin()) {

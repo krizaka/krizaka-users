@@ -105,8 +105,8 @@ class OrganizationPersistenceIT extends AbstractContainerIntegrationTest {
             });
     assertThat(organizations.findById("org-1")).isPresent();
     assertThat(organizations.findById("nope")).isEmpty();
-    assertThatThrownBy(
-            () -> organizations.save(new OrganizationDto("org-2", "krizaka", "Other", null)))
+    var sameSlug = new OrganizationDto("org-2", "krizaka", "Other", null);
+    assertThatThrownBy(() -> organizations.save(sameSlug))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 
@@ -132,7 +132,8 @@ class OrganizationPersistenceIT extends AbstractContainerIntegrationTest {
 
   @Test
   void aRoleOutsideTheFourIsRefusedByTheDatabase() {
-    assertThatThrownBy(() -> organizations.saveMember(member("person", "BOSS")))
+    var boss = member("person", "BOSS");
+    assertThatThrownBy(() -> organizations.saveMember(boss))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 
