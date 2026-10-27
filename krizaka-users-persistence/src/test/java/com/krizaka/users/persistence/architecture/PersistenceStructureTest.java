@@ -3,12 +3,11 @@ package com.krizaka.users.persistence.architecture;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.krizaka.test.architecture.ArchitectureRules;
+import com.krizaka.test.architecture.CodeRules;
 import com.krizaka.test.architecture.FrozenRules;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
-import com.tngtech.archunit.lang.ArchRule;
-import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -85,15 +84,14 @@ class PersistenceStructureTest {
   }
 
   @Test
-  @DisplayName("No mutable static state: a static field is final (krizaka-users#28)")
+  @DisplayName("No mutable static state: a static field is final (krizaka-users#28, ADR-013)")
   void noMutableStaticFields() {
-    ArchRule rule =
-        ArchRuleDefinition.noFields()
-            .that()
-            .areStatic()
-            .should()
-            .notBeFinal()
-            .because("state belongs to the Spring context that owns it, never to the JVM");
-    assertDoesNotThrow(() -> FrozenRules.check(rule, classes));
+    assertDoesNotThrow(() -> FrozenRules.check(CodeRules.noStaticMutableStateRule(), classes));
+  }
+
+  @Test
+  @DisplayName("No @Transactional method returns a stream (ADR-013)")
+  void noTransactionalStreams() {
+    assertDoesNotThrow(() -> FrozenRules.check(CodeRules.noTransactionalOnStreamsRule(), classes));
   }
 }
