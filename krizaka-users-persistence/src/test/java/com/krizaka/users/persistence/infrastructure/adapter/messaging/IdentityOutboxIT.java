@@ -38,6 +38,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 @SpringBootTest(
     classes = IdentityOutboxIT.App.class,
     properties = {
+      "krizaka.users.crypto.key=test-crypto-key-0123456789abcdef!",
+      "krizaka.users.crypto.salt=0123456789abcdef",
       "spring.jpa.hibernate.ddl-auto=validate",
       "spring.flyway.enabled=false",
       "krizaka.messaging.outbox.enabled=false",

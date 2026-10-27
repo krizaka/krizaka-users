@@ -7,6 +7,8 @@ import com.krizaka.test.architecture.FrozenRules;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,5 +82,18 @@ class PersistenceStructureTest {
                   "..application.service..", "..infrastructure.adapter.."),
               classes);
         });
+  }
+
+  @Test
+  @DisplayName("No mutable static state: a static field is final (krizaka-users#28)")
+  void noMutableStaticFields() {
+    ArchRule rule =
+        ArchRuleDefinition.noFields()
+            .that()
+            .areStatic()
+            .should()
+            .notBeFinal()
+            .because("state belongs to the Spring context that owns it, never to the JVM");
+    assertDoesNotThrow(() -> FrozenRules.check(rule, classes));
   }
 }
