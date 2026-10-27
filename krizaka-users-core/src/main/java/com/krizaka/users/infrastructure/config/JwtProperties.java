@@ -3,6 +3,7 @@ package com.krizaka.users.infrastructure.config;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
@@ -25,6 +26,7 @@ public record JwtProperties(
     @DefaultValue("PT30M") Duration ttl,
     Signing signing) {
 
+  @ConstructorBinding
   public JwtProperties {
     if (secret == null || secret.length() < 32) {
       throw new IllegalArgumentException(
