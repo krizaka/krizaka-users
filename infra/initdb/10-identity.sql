@@ -105,6 +105,25 @@ CREATE TABLE api_keys (
 CREATE UNIQUE INDEX idx_api_keys_hash ON api_keys(key_hash);
 CREATE INDEX idx_api_keys_user ON api_keys(user_id);
 
+-- An organization owns accounts (orazaka#372): the company (or an SME) is one party above its members and its
+-- products' service accounts (svc_*). A member keeps one role; a service account is a user with the SERVICE role,
+-- whose API keys the organization sees and can revoke. Removing a user removes their memberships.
+CREATE TABLE organizations (
+    id VARCHAR(255) PRIMARY KEY,
+    slug VARCHAR(63) NOT NULL UNIQUE,
+    name VARCHAR(150) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE organization_members (
+    organization_id VARCHAR(255) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(16) NOT NULL CHECK (role IN ('OWNER', 'ADMIN', 'MEMBER', 'SERVICE')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (organization_id, user_id)
+);
+CREATE INDEX idx_organization_members_user ON organization_members(user_id);
+
 CREATE TABLE password_resets (
     id         VARCHAR(255) PRIMARY KEY,
     email      VARCHAR(255) NOT NULL,

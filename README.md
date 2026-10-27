@@ -38,6 +38,7 @@ Built for and used by [Orazaka](https://github.com/krizaka/orazaka), the soverei
 | Forgot password (single-use token, SHA-256 hashed, 15 minutes) | `POST /api/v1/auth/forgot` |
 | Reset password | `POST /api/v1/auth/reset` |
 | Profile and preferences | `GET /api/v1/profile` · `PUT /api/v1/profile/preferences` |
+| Organizations | `GET/POST /api/v1/organizations` · `GET /{id}` · `GET/PUT /{id}/members` · `DELETE /{id}/members/{userId}` · `POST /{id}/service-accounts` · `GET /{id}/service-keys` · `DELETE /{id}/service-keys/{keyId}` (owner or administrator; a `svc_*` account is attached as `SERVICE`; schema in `infra/migrations/2026-10-27-organizations.sql`) |
 | API keys | `GET/POST /api/v1/api-keys` · `DELETE /api/v1/api-keys/{id}` |
 | Provider credentials (bring your own key, encrypted at rest) | `GET/POST /api/v1/credentials` · `DELETE /api/v1/credentials/{provider}` |
 | Service-to-service — `SERVICE` authority only | `/internal/v1/users/{id}` · `/internal/v1/tokens/exchange` · `/internal/v1/tiers/*` |

@@ -147,6 +147,10 @@ public class SecurityConfig {
                     .hasAnyAuthority(ADMIN, USER)
                     .requestMatchers("/api/v1/api-keys/**")
                     .hasAnyAuthority(ADMIN, USER)
+                    // Organizations that own accounts: the service checks the caller's role in
+                    // each.
+                    .requestMatchers("/api/v1/organizations/**")
+                    .hasAnyAuthority(ADMIN, USER)
                     .requestMatchers("/api/v1/credentials/**")
                     .hasAnyAuthority(ADMIN, USER)
                     // The operator console's account administration: administrators only (and

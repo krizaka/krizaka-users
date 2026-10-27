@@ -3,6 +3,9 @@ package com.krizaka.users.infrastructure.adapter.rest;
 import com.krizaka.users.domain.exception.AdminActionRefusedException;
 import com.krizaka.users.domain.exception.ApiKeyLimitExceededException;
 import com.krizaka.users.domain.exception.InvalidRequestException;
+import com.krizaka.users.domain.exception.OrganizationAccessDeniedException;
+import com.krizaka.users.domain.exception.OrganizationConflictException;
+import com.krizaka.users.domain.exception.OrganizationNotFoundException;
 import com.krizaka.users.domain.exception.RegistrationClosedException;
 import com.krizaka.users.domain.exception.UserAlreadyExistsException;
 import com.krizaka.users.domain.exception.UserNotFoundException;
@@ -64,6 +67,27 @@ public class IdentityErrorResolver {
   @ExceptionHandler(UserNotFoundException.class)
   public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException ex) {
     return errorResponse(HttpStatus.NOT_FOUND, ex);
+  }
+
+  /** Maps an organization that does not exist, or is not visible to the caller, to 404. */
+  @ExceptionHandler(OrganizationNotFoundException.class)
+  public ResponseEntity<Map<String, String>> handleOrganizationNotFound(
+      OrganizationNotFoundException ex) {
+    return errorResponse(HttpStatus.NOT_FOUND, ex);
+  }
+
+  /** Maps an action the caller's organization role does not allow to 403. */
+  @ExceptionHandler(OrganizationAccessDeniedException.class)
+  public ResponseEntity<Map<String, String>> handleOrganizationAccessDenied(
+      OrganizationAccessDeniedException ex) {
+    return errorResponse(HttpStatus.FORBIDDEN, ex);
+  }
+
+  /** Maps a taken slug or a missing last owner to 409. */
+  @ExceptionHandler(OrganizationConflictException.class)
+  public ResponseEntity<Map<String, String>> handleOrganizationConflict(
+      OrganizationConflictException ex) {
+    return errorResponse(HttpStatus.CONFLICT, ex);
   }
 
   private ResponseEntity<Map<String, String>> errorResponse(
