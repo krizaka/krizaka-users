@@ -23,13 +23,13 @@ class JwtConfigTest {
 
     String token =
         config
-            .identityJwtEncoder(properties)
+            .identityJwtEncoder(properties, IssuerKeys.none())
             .encode(
                 JwtEncoderParameters.from(
                     JwsHeader.with(MacAlgorithm.HS256).build(),
                     JwtClaimsSet.builder().subject("user-1").build()))
             .getTokenValue();
-    Jwt decoded = config.identityJwtDecoder(properties).decode(token);
+    Jwt decoded = config.identityJwtDecoder(properties, IssuerKeys.none()).decode(token);
 
     assertThat(decoded.getSubject()).isEqualTo("user-1");
   }
