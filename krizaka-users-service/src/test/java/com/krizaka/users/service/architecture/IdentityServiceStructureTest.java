@@ -3,6 +3,7 @@ package com.krizaka.users.service.architecture;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.krizaka.test.architecture.ArchitectureRules;
+import com.krizaka.test.architecture.CodeRules;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -47,5 +48,23 @@ class IdentityServiceStructureTest {
         () -> {
           ArchitectureRules.noEnvironmentOutsideConfigRule("..config..").check(classes);
         });
+  }
+
+  @Test
+  @DisplayName("No mutable static state (krizaka-users#28, ADR-013)")
+  void noMutableStaticFields() {
+    assertDoesNotThrow(() -> CodeRules.noStaticMutableStateRule().check(classes));
+  }
+
+  @Test
+  @DisplayName("No user content in the query of a GET (ADR-013)")
+  void noContentOnGet() {
+    assertDoesNotThrow(() -> CodeRules.noContentOnGetRule().check(classes));
+  }
+
+  @Test
+  @DisplayName("No @Transactional method returns a stream (ADR-013)")
+  void noTransactionalStreams() {
+    assertDoesNotThrow(() -> CodeRules.noTransactionalOnStreamsRule().check(classes));
   }
 }
