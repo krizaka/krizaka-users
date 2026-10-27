@@ -80,6 +80,14 @@ krizaka:
       secret: ${IDENTITY_JWT_SECRET:orazaka-local-dev-identity-jwt-secret-256bit!}
       issuer: ${IDENTITY_JWT_ISSUER:krizaka-users}
       ttl: ${IDENTITY_JWT_TTL:PT12H}
+      # ES256 issuer key (ADR-001): PEM from the environment, never committed. All three set =
+      # session tokens are ES256 and /.well-known/jwks.json publishes the public key; unset = legacy
+      # HS256. Rotation: set the new pair and key id, and move the old public key to `retired`
+      # (KRIZAKA_USERS_JWT_SIGNING_RETIRED_<KID>=<public PEM>) until its tokens expire.
+      signing:
+        private-key: ${AUTH_JWT_SIGNING_KEY:}
+        public-key: ${AUTH_JWT_SIGNING_PUBLIC_KEY:}
+        key-id: ${AUTH_JWT_SIGNING_KEY_ID:}
     # AES-256 JPA field encryption (krizaka-users-core crypto adapter).
     crypto:
       key: ${CRYPTO_KEY:}

@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -41,9 +42,14 @@ class TokenServiceImpl implements TokenService {
     if (user.rateLimitTier() != null && !user.rateLimitTier().isBlank()) {
       claims.claim("tier", user.rateLimitTier());
     }
-    return jwtEncoder
-        .encode(
-            JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims.build()))
-        .getTokenValue();
+    return jwtEncoder.encode(JwtEncoderParameters.from(header(), claims.build())).getTokenValue();
+  }
+
+  /** ES256 naming the kid when the issuer key is configured (ADR-001), legacy HS256 otherwise. */
+  private JwsHeader header() {
+    if (properties.signing() == null || !properties.signing().configured()) {
+      return JwsHeader.with(MacAlgorithm.HS256).build();
+    }
+    return JwsHeader.with(SignatureAlgorithm.ES256).keyId(properties.signing().keyId()).build();
   }
 }

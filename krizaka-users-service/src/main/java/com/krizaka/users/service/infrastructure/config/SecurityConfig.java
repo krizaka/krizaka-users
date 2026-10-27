@@ -141,7 +141,9 @@ public class SecurityConfig {
                         "/api/v1/auth/verify",
                         "/api/v1/auth/oauth",
                         "/api/v1/auth/forgot",
-                        "/api/v1/auth/reset")
+                        "/api/v1/auth/reset",
+                        // The issuer's public keys (ADR-001): verifiers fetch them unauthenticated.
+                        "/.well-known/jwks.json")
                     .permitAll()
                     .requestMatchers("/api/v1/profile/**")
                     .hasAnyAuthority(ADMIN, USER)
