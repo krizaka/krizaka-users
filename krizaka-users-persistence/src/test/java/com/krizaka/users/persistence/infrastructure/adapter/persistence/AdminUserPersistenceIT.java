@@ -28,6 +28,8 @@ import org.springframework.orm.jpa.persistenceunit.PersistenceManagedTypes;
 @SpringBootTest(
     classes = AdminUserPersistenceIT.App.class,
     properties = {
+      "krizaka.users.crypto.key=test-crypto-key-0123456789abcdef!",
+      "krizaka.users.crypto.salt=0123456789abcdef",
       "spring.jpa.hibernate.ddl-auto=none",
       "spring.flyway.enabled=false",
       "krizaka.messaging.outbox.enabled=false",
