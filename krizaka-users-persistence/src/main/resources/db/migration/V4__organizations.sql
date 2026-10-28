@@ -1,5 +1,5 @@
--- orazaka#372: organizations that own accounts. Applied once to an existing identity database (krizaka_users_db), as its
--- owner role. Idempotent. New installs get the tables from 10-identity.sql.
+-- orazaka#372: organizations that own accounts. Flyway V4, run on deploy by the service role.
+-- Idempotent. New installs get the tables from 10-identity.sql.
 CREATE TABLE IF NOT EXISTS organizations (
     id VARCHAR(255) PRIMARY KEY,
     slug VARCHAR(63) NOT NULL UNIQUE,

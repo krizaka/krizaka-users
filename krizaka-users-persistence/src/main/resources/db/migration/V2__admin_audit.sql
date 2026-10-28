@@ -1,4 +1,4 @@
--- Applied once to an existing identity database (krizaka_users_db), as its owner role. New installs get it from 10-identity.sql.
+-- Flyway V2 (runs on deploy, as the service role). Idempotent. New installs get it from 10-identity.sql.
 CREATE TABLE IF NOT EXISTS admin_audit (
     id BIGSERIAL PRIMARY KEY,
     at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
