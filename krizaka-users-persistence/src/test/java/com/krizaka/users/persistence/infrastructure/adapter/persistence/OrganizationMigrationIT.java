@@ -13,18 +13,21 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * The migration of orazaka#372 ({@code infra/migrations/2026-10-27-organizations.sql}) applied to
- * an identity database that predates organizations: it creates the same tables as {@code
- * 10-identity.sql}, seeds the Krizaka organization with the existing {@code svc_*} accounts, and
- * can be applied twice.
+ * The migration of orazaka#372 ({@code db/migration/V4__organizations.sql}, run on deploy by
+ * Flyway) applied to an identity database that predates organizations: it creates the same tables
+ * as {@code 10-identity.sql}, seeds the Krizaka organization with the existing {@code svc_*}
+ * accounts, and can be applied twice.
  */
 class OrganizationMigrationIT extends AbstractContainerIntegrationTest {
 
   private static final String ORG_BLOCK_START = "-- An organization owns accounts";
   private static final String ORG_BLOCK_END = "CREATE TABLE password_resets";
 
-  private static Path infra() {
-    return InitDb.locate(Path.of(System.getProperty("user.dir"))).getParent();
+  private static String migrationV4() throws Exception {
+    try (var in =
+        OrganizationMigrationIT.class.getResourceAsStream("/db/migration/V4__organizations.sql")) {
+      return new String(java.util.Objects.requireNonNull(in).readAllBytes());
+    }
   }
 
   private static Connection connect() throws Exception {
@@ -65,7 +68,7 @@ class OrganizationMigrationIT extends AbstractContainerIntegrationTest {
     int from = before.indexOf(ORG_BLOCK_START);
     String withoutOrganizations =
         before.substring(0, from) + before.substring(before.indexOf(ORG_BLOCK_END));
-    String migration = Files.readString(infra().resolve("migrations/2026-10-27-organizations.sql"));
+    String migration = migrationV4();
     try (Connection c = connect();
         Statement s = c.createStatement()) {
       reset(s);
@@ -109,7 +112,7 @@ class OrganizationMigrationIT extends AbstractContainerIntegrationTest {
     String withoutOrganizations =
         full.substring(0, full.indexOf(ORG_BLOCK_START))
             + full.substring(full.indexOf(ORG_BLOCK_END));
-    String migration = Files.readString(infra().resolve("migrations/2026-10-27-organizations.sql"));
+    String migration = migrationV4();
     String fromInstall;
     String fromMigration;
     try (Connection c = connect();
@@ -123,5 +126,56 @@ class OrganizationMigrationIT extends AbstractContainerIntegrationTest {
       fromMigration = columns(s);
     }
     assertThat(fromInstall).isNotBlank().isEqualTo(fromMigration);
+  }
+
+  @Test
+  void flywayBaselinesAnExistingDatabaseAndAppliesTheOrganizationsOnceOnDeploy() throws Exception {
+    String full = identitySql();
+    String withoutOrganizations =
+        full.substring(0, full.indexOf(ORG_BLOCK_START))
+            + full.substring(full.indexOf(ORG_BLOCK_END));
+    try (Connection c = connect();
+        Statement s = c.createStatement()) {
+      reset(s);
+      s.execute(withoutOrganizations);
+      s.execute(
+          "INSERT INTO users (id, username, email, enabled) VALUES ('u1', 'svc_akinaza',"
+              + " 'a@x.test', TRUE)");
+    }
+    var flyway = flyway();
+    assertThat(flyway.migrate().migrationsExecuted)
+        .as("V2..V4 on the baselined database")
+        .isEqualTo(3);
+    assertThat(flyway.migrate().migrationsExecuted).as("a second start does nothing").isZero();
+    try (Connection c = connect();
+        Statement s = c.createStatement()) {
+      s.execute("SET search_path TO migration_check");
+      var rs = s.executeQuery("SELECT count(*) FROM organization_members WHERE role = 'SERVICE'");
+      assertThat(rs.next()).isTrue();
+      assertThat(rs.getInt(1)).isEqualTo(1);
+    }
+  }
+
+  @Test
+  void flywayPassesThroughAFreshInstallWithoutChangingIt() throws Exception {
+    try (Connection c = connect();
+        Statement s = c.createStatement()) {
+      reset(s);
+      s.execute(identitySql());
+      String before = columns(s);
+      assertThat(flyway().migrate().migrationsExecuted).isEqualTo(3);
+      assertThat(columns(s)).isEqualTo(before);
+    }
+  }
+
+  private static org.flywaydb.core.Flyway flyway() {
+    return org.flywaydb.core.Flyway.configure()
+        .dataSource(postgres().getJdbcUrl(), postgres().getUsername(), postgres().getPassword())
+        .schemas("migration_check")
+        .defaultSchema("migration_check")
+        .locations("classpath:db/migration")
+        .baselineOnMigrate(true)
+        .baselineVersion("1")
+        .load();
   }
 }
