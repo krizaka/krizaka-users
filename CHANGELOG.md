@@ -6,14 +6,21 @@ Every Krizaka JVM artifact is released at the same version.
 
 ## [Unreleased]
 
+### Changed
+
+- **Schema changes are versioned Flyway migrations that run on deploy** (`krizaka-users-persistence/src/main/resources/db/migration`,
+  `V2` admin_audit, `V3` its request id and outcome, `V4` organizations, orazaka#372): the loose `infra/migrations/*.sql`
+  files are gone, nobody applies SQL by hand. An existing database is baselined at version 1 (what `10-identity.sql`
+  creates); every migration is idempotent, so a fresh install (which already has the tables) passes through them.
+
 ### Added
 
 - **Account administration** (`/api/v1/admin/users`, administrators only, every action audited): search and list,
   suspend and restore (the account can no longer sign in or use a key), grant or withdraw the administrator role (never
   your own, the last administrator keeps it), Law 25 export and erasure of the identity context's data (the typed
   e-mail confirms; the audit keeps the fact, not the person), and the audit trail (`GET /audit`). New table
-  `admin_audit`: `infra/initdb/10-identity.sql`, and `infra/migrations/2026-10-15-admin-audit.sql` for an existing
-  database — apply it before deploying. Sessions are stateless tokens: a token already issued is not revoked by a
+  `admin_audit`: `infra/initdb/10-identity.sql`, and the Flyway migration `V2__admin_audit.sql` for an existing
+  database (applied at startup). Sessions are stateless tokens: a token already issued is not revoked by a
   suspension in the services that only verify its signature. `IdentityServiceContextIT` starts the whole service as
   deployed and drives the administration through its HTTP chain.
 

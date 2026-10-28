@@ -38,7 +38,7 @@ Built for and used by [Orazaka](https://github.com/krizaka/orazaka), the soverei
 | Forgot password (single-use token, SHA-256 hashed, 15 minutes) | `POST /api/v1/auth/forgot` |
 | Reset password | `POST /api/v1/auth/reset` |
 | Profile and preferences | `GET /api/v1/profile` · `PUT /api/v1/profile/preferences` |
-| Organizations | `GET/POST /api/v1/organizations` · `GET /{id}` · `GET/PUT /{id}/members` · `DELETE /{id}/members/{userId}` · `POST /{id}/service-accounts` · `GET /{id}/service-keys` · `DELETE /{id}/service-keys/{keyId}` (owner or administrator; a `svc_*` account is attached as `SERVICE`; schema in `infra/migrations/2026-10-27-organizations.sql`) |
+| Organizations | `GET/POST /api/v1/organizations` · `GET /{id}` · `GET/PUT /{id}/members` · `DELETE /{id}/members/{userId}` · `POST /{id}/service-accounts` · `GET /{id}/service-keys` · `DELETE /{id}/service-keys/{keyId}` (owner or administrator; a `svc_*` account is attached as `SERVICE`; schema: `10-identity.sql` and Flyway `V4__organizations.sql`) |
 | API keys | `GET/POST /api/v1/api-keys` · `DELETE /api/v1/api-keys/{id}` |
 | Provider credentials (bring your own key, encrypted at rest) | `GET/POST /api/v1/credentials` · `DELETE /api/v1/credentials/{provider}` |
 | Service-to-service — `SERVICE` authority only | `/internal/v1/users/{id}` · `/internal/v1/tokens/exchange` · `/internal/v1/tiers/*` |
@@ -152,6 +152,9 @@ A consumer keeps its own copy of the event and checks it against the schema with
 
 PostgreSQL and RabbitMQ are required. The database, its role (created **without** a password — set it at deployment)
 and the schema come from [`infra/initdb/10-identity.sql`](infra/initdb/10-identity.sql).
+Later schema changes are Flyway migrations (`krizaka-users-persistence/src/main/resources/db/migration`, `V<n>__<what>.sql`,
+idempotent) applied by the service itself at startup, as its own role; the database is baselined at version 1. Never apply
+SQL by hand.
 
 > **Messaging.** Events are published to the events exchange of the platform the service runs on:
 > `krizaka.messaging.exchanges.events` (`EVENTS_EXCHANGE`, default `krizaka.events`) and
