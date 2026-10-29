@@ -163,7 +163,7 @@ class OrganizationMigrationIT extends AbstractContainerIntegrationTest {
       reset(s);
       s.execute(identitySql());
       String before = columns(s);
-      assertThat(flyway().migrate().migrationsExecuted).isEqualTo(4);
+      assertThat(flyway().migrate().migrationsExecuted).isEqualTo(5);
       assertThat(columns(s)).isEqualTo(before);
     }
   }
