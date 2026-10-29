@@ -144,8 +144,8 @@ class OrganizationMigrationIT extends AbstractContainerIntegrationTest {
     }
     var flyway = flyway();
     assertThat(flyway.migrate().migrationsExecuted)
-        .as("V2..V5 on the baselined database")
-        .isEqualTo(4);
+        .as("V2..V6 on the baselined database")
+        .isEqualTo(5);
     assertThat(flyway.migrate().migrationsExecuted).as("a second start does nothing").isZero();
     try (Connection c = connect();
         Statement s = c.createStatement()) {

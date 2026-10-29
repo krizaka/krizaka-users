@@ -5,6 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.github.benmanes.caffeine.cache.Ticker;
+import com.krizaka.users.domain.model.AdminActor;
+import com.krizaka.users.domain.model.LockoutPolicy;
+import com.krizaka.users.domain.model.LockoutState;
+import com.krizaka.users.domain.ports.inbound.LoginLockoutService;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +51,7 @@ class AuthRateLimitFilterTest {
   }
 
   private final AtomicLong nanos = new AtomicLong();
+  private final FakeLockout lockout = new FakeLockout(nanos);
   private MockMvc mvc;
 
   @BeforeEach
@@ -62,16 +68,10 @@ class AuthRateLimitFilterTest {
             new AuthRateLimitProperties.Budget(5, java.time.Duration.ofHours(1)),
             new AuthRateLimitProperties.Budget(10, java.time.Duration.ofMinutes(15)),
             new AuthRateLimitProperties.Budget(20, java.time.Duration.ofMinutes(1)),
-            new AuthRateLimitProperties.Budget(3, java.time.Duration.ofHours(1)),
-            new AuthRateLimitProperties.Lockout(
-                5,
-                25,
-                java.time.Duration.ofMinutes(1),
-                java.time.Duration.ofMinutes(15),
-                java.time.Duration.ofMinutes(30)));
+            new AuthRateLimitProperties.Budget(3, java.time.Duration.ofHours(1)));
     mvc =
         MockMvcBuilders.standaloneSetup(new FakeAuth())
-            .addFilters(new AuthRateLimitFilter(props, clock))
+            .addFilters(new AuthRateLimitFilter(props, clock, lockout))
             .build();
   }
 
@@ -204,5 +204,52 @@ class AuthRateLimitFilterTest {
                       return r;
                     }))
         .andExpect(status().isTooManyRequests());
+  }
+
+  /** The durable lockout in memory, on the test clock: the rules are the domain's own. */
+  static final class FakeLockout implements LoginLockoutService {
+    private final AtomicLong nanos;
+    private final Map<String, LockoutState> states = new java.util.HashMap<>();
+    private final LockoutPolicy policy = LockoutPolicy.defaults();
+
+    FakeLockout(AtomicLong nanos) {
+      this.nanos = nanos;
+    }
+
+    private Instant now() {
+      return Instant.EPOCH.plusNanos(nanos.get());
+    }
+
+    @Override
+    public long retryAfterSeconds(String account, String ip) {
+      return Math.max(
+          LockoutState.retryAfterSeconds(states.get("p|" + account + "|" + ip), now()),
+          LockoutState.retryAfterSeconds(states.get("a|" + account), now()));
+    }
+
+    @Override
+    public void recordFailure(String account, String ip) {
+      states.compute(
+          "p|" + account + "|" + ip,
+          (k, old) -> LockoutState.afterFailure(old, policy.threshold(), policy, now()));
+      states.compute(
+          "a|" + account,
+          (k, old) -> LockoutState.afterFailure(old, policy.accountThreshold(), policy, now()));
+    }
+
+    @Override
+    public void recordSuccess(String account, String ip) {
+      states.remove("p|" + account + "|" + ip);
+    }
+
+    @Override
+    public LockoutPolicy policy() {
+      return policy;
+    }
+
+    @Override
+    public LockoutPolicy updatePolicy(AdminActor actor, LockoutPolicy next) {
+      throw new UnsupportedOperationException();
+    }
   }
 }
