@@ -3,6 +3,7 @@ package com.krizaka.users.application.service;
 import com.krizaka.users.domain.exception.InvalidRequestException;
 import com.krizaka.users.domain.model.PasswordResetRequestedEvent;
 import com.krizaka.users.domain.model.PasswordResetToken;
+import com.krizaka.users.domain.ports.inbound.PasswordPolicyService;
 import com.krizaka.users.domain.ports.inbound.PasswordRecoveryService;
 import com.krizaka.users.domain.ports.outbound.CryptographyPort;
 import com.krizaka.users.domain.ports.outbound.PasswordEventPublisher;
@@ -35,18 +36,22 @@ class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
   private final PasswordResetTokenRepositoryPort tokenRepository;
   private final UserRepositoryPort userRepository;
   private final CryptographyPort cryptography;
+  private final PasswordPolicyService passwordPolicy;
   private final PasswordEventPublisher passwordEventPublisher;
 
   PasswordRecoveryServiceImpl(
       PasswordResetTokenRepositoryPort tokenRepository,
       UserRepositoryPort userRepository,
       CryptographyPort cryptography,
+      PasswordPolicyService passwordPolicy,
       PasswordEventPublisher passwordEventPublisher) {
     this.tokenRepository =
         Objects.requireNonNull(tokenRepository, "PasswordResetTokenRepositoryPort cannot be null");
     this.userRepository =
         Objects.requireNonNull(userRepository, "UserRepositoryPort cannot be null");
     this.cryptography = Objects.requireNonNull(cryptography, "CryptographyPort cannot be null");
+    this.passwordPolicy =
+        Objects.requireNonNull(passwordPolicy, "PasswordPolicyService cannot be null");
     this.passwordEventPublisher =
         Objects.requireNonNull(passwordEventPublisher, "PasswordEventPublisher cannot be null");
   }
@@ -92,10 +97,7 @@ class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
   public void resetPassword(String token, String newPassword) {
     Objects.requireNonNull(token, "Token cannot be null");
     Objects.requireNonNull(newPassword, "New password cannot be null");
-
-    if (newPassword.length() < 8) {
-      throw new InvalidRequestException("Password must be at least 8 characters");
-    }
+    String acceptedPassword = passwordPolicy.accept(newPassword);
 
     String tokenHash = cryptography.hashToken(token);
 
@@ -109,7 +111,7 @@ class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
       throw new InvalidRequestException("Invalid or expired reset token");
     }
 
-    String encodedPassword = cryptography.encodePassword(newPassword);
+    String encodedPassword = cryptography.encodePassword(acceptedPassword);
     userRepository.updatePasswordHashByEmail(resetToken.email(), encodedPassword);
 
     // Delete the token — single-use guarantee

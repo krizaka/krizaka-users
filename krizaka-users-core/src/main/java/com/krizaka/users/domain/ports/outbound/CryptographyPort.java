@@ -27,4 +27,10 @@ public interface CryptographyPort {
    * @return True if they match; false otherwise.
    */
   boolean matchesPassword(String rawPassword, String encodedPassword);
+
+  /**
+   * Whether a stored hash is weaker than what a new password gets today (legacy BCrypt, scrypt, a
+   * lower Argon2 cost): the caller rehashes it after a successful sign-in.
+   */
+  boolean needsRehash(String encodedPassword);
 }
