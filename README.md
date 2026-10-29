@@ -145,6 +145,7 @@ A consumer keeps its own copy of the event and checks it against the schema with
 | `krizaka.users.jwt.ttl` | `IDENTITY_JWT_TTL` | `PT12H` |
 | `krizaka.users.crypto.key` / `.salt` | `CRYPTO_KEY` / `CRYPTO_SALT` | — (provider-key encryption) |
 | `krizaka.users.vault.key` / `.key-id` | `AUTH_VAULT_KEY` / `AUTH_VAULT_KEY_ID` | — (32 bytes, base64) / `k1` — the key that seals the identity secrets (see « The vault ») |
+| `krizaka.users.password.breach-check` | `AUTH_PASSWORD_BREACH_CHECK` | `true` — a new password is checked against Pwned Passwords (range API, padded; fail-open) |
 | `krizaka.users.email-verification.enabled` | `EMAIL_VERIFICATION_ENABLED` | `true` |
 | `krizaka.users.registration.enabled` | `AUTH_SIGNUP_ENABLED` | `true` — `false` closes account creation (register → 403, first sign-in of an unknown Google/GitHub identity → 403); existing accounts keep signing in |
 | `krizaka.users-service.datasource.url` | `IDENTITY_DB_URL` | `jdbc:postgresql://localhost:5432/krizaka_users_db` |
@@ -156,6 +157,14 @@ and the schema come from [`infra/initdb/10-identity.sql`](infra/initdb/10-identi
 Later schema changes are Flyway migrations (`krizaka-users-persistence/src/main/resources/db/migration`, `V<n>__<what>.sql`,
 idempotent) applied by the service itself at startup, as its own role; the database is baselined at version 1. Never apply
 SQL by hand.
+
+### Passwords (ADR-016 slice 2)
+
+New passwords are hashed with **Argon2id** (`{argon2}`, 19 MiB, 2 passes), NFKC-normalised, **15 characters minimum** (8 once a second
+factor exists), 256 at most, no composition rule, and refused when they appear in a known breach (Pwned Passwords range API with
+padding: only five hex characters of the SHA-1 leave; unreachable = accepted and logged). The BCrypt hashes already stored (no
+prefix) and the products' scrypt hashes still verify, and are rehashed to Argon2id after a successful sign-in without invalidating
+sessions. Not in this slice: the durable lockout (state still in memory).
 
 ### The vault (ADR-016 slice 1)
 

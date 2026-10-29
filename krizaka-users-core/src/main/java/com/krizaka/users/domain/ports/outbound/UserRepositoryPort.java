@@ -90,6 +90,12 @@ public interface UserRepositoryPort {
   void updatePasswordHashByEmail(String email, String passwordHash);
 
   /**
+   * Replaces the hash by a stronger one of the same password (rehash at sign-in); sessions stay
+   * valid.
+   */
+  void rehashPasswordByEmail(String email, String passwordHash);
+
+  /**
    * Resolves any user by email, regardless of enabled status.
    *
    * <p>Used by the password recovery flow to check if an account exists without leaking this

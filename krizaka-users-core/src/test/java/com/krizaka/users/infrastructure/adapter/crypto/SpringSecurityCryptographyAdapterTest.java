@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class SpringSecurityCryptographyAdapterTest {
 
-  @Mock private BCryptPasswordEncoder passwordEncoder;
+  @Mock private PasswordEncoder passwordEncoder;
 
   @InjectMocks private SpringSecurityCryptographyAdapter cryptographyAdapter;
 
@@ -32,7 +32,7 @@ class SpringSecurityCryptographyAdapterTest {
   }
 
   @Test
-  @DisplayName("encodePassword delegates to BCryptPasswordEncoder")
+  @DisplayName("encodePassword delegates to PasswordEncoder")
   void encodePassword() {
     when(passwordEncoder.encode("password123")).thenReturn("encoded123");
 
@@ -43,7 +43,7 @@ class SpringSecurityCryptographyAdapterTest {
   }
 
   @Test
-  @DisplayName("matchesPassword delegates comparison to BCryptPasswordEncoder")
+  @DisplayName("matchesPassword delegates comparison to PasswordEncoder")
   void matchesPassword() {
     when(passwordEncoder.matches("raw", "encoded")).thenReturn(true);
 
