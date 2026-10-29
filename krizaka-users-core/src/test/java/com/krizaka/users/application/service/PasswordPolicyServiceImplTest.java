@@ -55,7 +55,7 @@ class PasswordPolicyServiceImplTest {
 
   @Test
   void aBreachedPasswordIsRefused() {
-    var breached = new PasswordPolicyServiceImpl(p -> p.equals("correct horse battery"));
+    var breached = new PasswordPolicyServiceImpl("correct horse battery"::equals);
     assertThatThrownBy(() -> breached.accept("correct horse battery"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageContaining("breach");

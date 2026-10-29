@@ -71,7 +71,7 @@ class SocialConnectionPersistenceIT extends AbstractContainerIntegrationTest {
     provider.save(
         new SocialConnectionRow("google", "g-id", "v2.k2.ccc.bbb", "k2", "env", Instant.now()));
     assertThat(provider.findAll()).extracting(SocialConnectionRow::keyId).contains("k2");
-    assertThat(provider.findAll().stream().filter(r -> r.provider().equals("google"))).hasSize(1);
+    assertThat(provider.findAll().stream().filter(r -> "google".equals(r.provider()))).hasSize(1);
   }
 
   @Test
