@@ -99,6 +99,9 @@ krizaka:
     vault:
       key: ${AUTH_VAULT_KEY:}
       key-id: ${AUTH_VAULT_KEY_ID:k1}
+    # Passwords (ADR-016 decision 2): Argon2id, 15 characters minimum alone, checked against Pwned Passwords (k-anonymity, fail-open).
+    password:
+      breach-check: ${AUTH_PASSWORD_BREACH_CHECK:true}
     # AES-256 JPA field encryption (krizaka-users-core crypto adapter).
     crypto:
       key: ${CRYPTO_KEY:}
