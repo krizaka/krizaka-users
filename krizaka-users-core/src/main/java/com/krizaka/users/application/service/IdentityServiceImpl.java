@@ -183,7 +183,17 @@ class IdentityServiceImpl implements IdentityService {
     }
 
     rehashIfWeak(email, password, securityInfo.passwordHash());
+    recheckBreach(user, password);
     return user;
+  }
+
+  /** The right password is looked up in the breach corpus again; never blocks the sign-in. */
+  private void recheckBreach(User user, String password) {
+    try {
+      passwordPolicy.recheckAtSignIn(user.id().toString(), password);
+    } catch (RuntimeException e) {
+      logger.warn("Breach recheck skipped ({})", e.getClass().getSimpleName());
+    }
   }
 
   /**

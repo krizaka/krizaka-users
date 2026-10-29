@@ -21,7 +21,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param reset per-IP budget of {@code /reset}
  * @param verify per-IP budget of {@code /verify}
  * @param emailMessages per-address budget of the endpoints that send an e-mail
- * @param lockout progressive lockout of failed logins
  */
 @ConfigurationProperties(prefix = "krizaka.users-service.rate-limit")
 public record AuthRateLimitProperties(
@@ -42,8 +41,7 @@ public record AuthRateLimitProperties(
     @DefaultValue Budget forgot,
     @DefaultValue Budget reset,
     @DefaultValue Budget verify,
-    @DefaultValue Budget emailMessages,
-    @DefaultValue Lockout lockout) {
+    @DefaultValue Budget emailMessages) {
 
   /**
    * A nested value object cannot carry per-field defaults through {@code @DefaultValue} arrays
@@ -72,20 +70,4 @@ public record AuthRateLimitProperties(
    * @param window time to refill the whole bucket
    */
   public record Budget(int requests, Duration window) {}
-
-  /**
-   * Progressive lockout of failed logins.
-   *
-   * @param threshold consecutive failures of one account from one address before the first lock
-   * @param accountThreshold failures of one account from any address before it is locked for all
-   * @param baseDelay first lock; doubles with every further failure
-   * @param maxDelay ceiling of a lock
-   * @param forgetAfter quiet time after which the failures are forgotten
-   */
-  public record Lockout(
-      @DefaultValue("5") int threshold,
-      @DefaultValue("25") int accountThreshold,
-      @DefaultValue("PT1M") Duration baseDelay,
-      @DefaultValue("PT15M") Duration maxDelay,
-      @DefaultValue("PT30M") Duration forgetAfter) {}
 }

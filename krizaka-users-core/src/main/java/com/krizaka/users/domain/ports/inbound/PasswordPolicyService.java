@@ -16,4 +16,13 @@ public interface PasswordPolicyService {
    * @throws com.krizaka.users.domain.exception.InvalidRequestException when it is refused
    */
   String accept(String rawPassword);
+
+  /**
+   * The password just proved right at sign-in is looked up in the breach corpus again (a password
+   * can be breached after it was chosen). Fail-open: an unreachable service answers {@code false}.
+   * A hit is audited (user id, never the password); the sign-in is not blocked here.
+   *
+   * @return whether the password appears in a known breach
+   */
+  boolean recheckAtSignIn(String userId, String rawPassword);
 }
