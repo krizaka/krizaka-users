@@ -12,6 +12,7 @@ import com.krizaka.users.domain.model.UserRegisteredEvent;
 import com.krizaka.users.domain.model.UserSecurityInfo;
 import com.krizaka.users.domain.model.VerificationToken;
 import com.krizaka.users.domain.ports.inbound.IdentityService;
+import com.krizaka.users.domain.ports.inbound.PasswordPolicyService;
 import com.krizaka.users.domain.ports.outbound.AuthorityRepositoryPort;
 import com.krizaka.users.domain.ports.outbound.CryptographyPort;
 import com.krizaka.users.domain.ports.outbound.UserCredentialRepositoryPort;
@@ -66,6 +67,7 @@ class IdentityServiceImpl implements IdentityService {
   private final UserInterceptionRepositoryPort userInterceptionRepository;
   private final UserCredentialRepositoryPort userCredentialRepository;
   private final CryptographyPort cryptography;
+  private final PasswordPolicyService passwordPolicy;
   private final IdentityInfrastructureProperties properties;
   private final UserEventPublisher userEventPublisher;
   private final TransactionTemplate transactionTemplate;
@@ -77,6 +79,7 @@ class IdentityServiceImpl implements IdentityService {
       UserInterceptionRepositoryPort userInterceptionRepository,
       UserCredentialRepositoryPort userCredentialRepository,
       CryptographyPort cryptography,
+      PasswordPolicyService passwordPolicy,
       IdentityInfrastructureProperties properties,
       UserEventPublisher userEventPublisher,
       PlatformTransactionManager transactionManager) {
@@ -86,6 +89,7 @@ class IdentityServiceImpl implements IdentityService {
     this.userInterceptionRepository = userInterceptionRepository;
     this.userCredentialRepository = userCredentialRepository;
     this.cryptography = cryptography;
+    this.passwordPolicy = passwordPolicy;
     this.properties = properties;
     this.userEventPublisher = userEventPublisher;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -159,7 +163,7 @@ class IdentityServiceImpl implements IdentityService {
   }
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional
   public User authenticate(String email, String password) {
     Optional<UserSecurityInfo> securityInfoOpt = userRepository.findSecurityInfoByEmail(email);
     if (securityInfoOpt.isEmpty()) {
@@ -178,7 +182,35 @@ class IdentityServiceImpl implements IdentityService {
       throw new BadCredentialsException(INVALID_CREDENTIALS_MSG);
     }
 
+    rehashIfWeak(email, password, securityInfo.passwordHash());
+    recheckBreach(user, password);
     return user;
+  }
+
+  /** The right password is looked up in the breach corpus again; never blocks the sign-in. */
+  private void recheckBreach(User user, String password) {
+    try {
+      passwordPolicy.recheckAtSignIn(user.id().toString(), password);
+    } catch (RuntimeException e) {
+      logger.warn("Breach recheck skipped ({})", e.getClass().getSimpleName());
+    }
+  }
+
+  /**
+   * The password is right: a hash weaker than today's (legacy BCrypt, scrypt) becomes Argon2id now,
+   * the only moment the clear password is at hand. Sessions stay valid; a failure never blocks the
+   * sign-in.
+   */
+  private void rehashIfWeak(String email, String password, String storedHash) {
+    if (!cryptography.needsRehash(storedHash)) {
+      return;
+    }
+    try {
+      userRepository.rehashPasswordByEmail(
+          email, cryptography.encodePassword(PasswordPolicyService.normalise(password)));
+    } catch (RuntimeException e) {
+      logger.warn("Password rehash skipped ({})", e.getClass().getSimpleName());
+    }
   }
 
   @Override
@@ -187,7 +219,7 @@ class IdentityServiceImpl implements IdentityService {
       logger.warn("Registration refused (registration closed)");
       throw new RegistrationClosedException();
     }
-    String passwordHash = cryptography.encodePassword(password);
+    String passwordHash = cryptography.encodePassword(passwordPolicy.accept(password));
     String userId = UUID.randomUUID().toString();
 
     Map<String, Object> preferences = new HashMap<>();

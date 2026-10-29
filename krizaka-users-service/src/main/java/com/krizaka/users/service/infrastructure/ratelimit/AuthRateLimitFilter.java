@@ -3,6 +3,7 @@ package com.krizaka.users.service.infrastructure.ratelimit;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
+import com.krizaka.users.domain.ports.inbound.LoginLockoutService;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
@@ -30,7 +31,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   <li>per client address, per endpoint, a Bucket4j token bucket;
  *   <li>per e-mail address on the endpoints that send a message ({@code register}, {@code forgot}):
  *       a stranger's mailbox cannot be flooded through us, however many addresses the caller has;
- *   <li>on {@code login}, a progressive lockout of failed attempts ({@link LoginLockout}).
+ *   <li>on {@code login}, a progressive lockout of failed attempts (durable, {@link
+ *       LoginLockoutService}).
  * </ul>
  */
 final class AuthRateLimitFilter extends OncePerRequestFilter {
@@ -42,15 +44,15 @@ final class AuthRateLimitFilter extends OncePerRequestFilter {
 
   private final AuthRateLimitProperties props;
   private final ClientIpResolver ips;
-  private final LoginLockout lockout;
+  private final LoginLockoutService lockout;
   private final Ticker ticker;
   private final Cache<String, Bucket> buckets;
 
-  AuthRateLimitFilter(AuthRateLimitProperties props, Ticker ticker) {
+  AuthRateLimitFilter(AuthRateLimitProperties props, Ticker ticker, LoginLockoutService lockout) {
     this.props = props;
     this.ticker = ticker;
     this.ips = new ClientIpResolver(props.trustedProxies(), props.clientIpHeader());
-    this.lockout = new LoginLockout(props.lockout(), ticker);
+    this.lockout = lockout;
     this.buckets =
         Caffeine.newBuilder()
             .ticker(ticker)
@@ -88,7 +90,7 @@ final class AuthRateLimitFilter extends OncePerRequestFilter {
       wait = takeEmail(endpoint, email);
     }
     if (wait == 0 && email != null && "login".equals(endpoint)) {
-      wait = lockout.retryAfterSeconds(email, ip);
+      wait = lockedFor(email, ip);
     }
     if (wait > 0) {
       log.warn("Auth throttled: endpoint={} ip={} retryAfter={}s", endpoint, ip, wait);
@@ -99,11 +101,30 @@ final class AuthRateLimitFilter extends OncePerRequestFilter {
     chain.doFilter(effective, response);
 
     if (email != null && "login".equals(endpoint)) {
+      String account = email;
       if (response.getStatus() == HttpServletResponse.SC_UNAUTHORIZED) {
-        lockout.recordFailure(email, ip);
+        record(() -> lockout.recordFailure(account, ip));
       } else if (response.getStatus() / 100 == 2) {
-        lockout.recordSuccess(email, ip);
+        record(() -> lockout.recordSuccess(account, ip));
       }
+    }
+  }
+
+  /** The lockout store is the database: if it fails, the per-address budget still protects. */
+  private long lockedFor(String email, String ip) {
+    try {
+      return lockout.retryAfterSeconds(email, ip);
+    } catch (RuntimeException e) {
+      log.error("Lockout check unavailable ({}): not enforced", e.getClass().getSimpleName());
+      return 0;
+    }
+  }
+
+  private void record(Runnable write) {
+    try {
+      write.run();
+    } catch (RuntimeException e) {
+      log.error("Lockout update lost ({})", e.getClass().getSimpleName());
     }
   }
 

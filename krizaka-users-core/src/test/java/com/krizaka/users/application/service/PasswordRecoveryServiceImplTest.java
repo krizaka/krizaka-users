@@ -44,11 +44,16 @@ class PasswordRecoveryServiceImplTest {
     return Persona.freeUser();
   }
 
+  @Mock private com.krizaka.users.domain.ports.inbound.PasswordPolicyService passwordPolicy;
+
   @BeforeEach
   void setUp() {
+    org.mockito.Mockito.lenient()
+        .when(passwordPolicy.accept(anyString()))
+        .thenAnswer(inv -> inv.getArgument(0));
     service =
         new PasswordRecoveryServiceImpl(
-            tokenRepository, userRepository, cryptography, passwordEventPublisher);
+            tokenRepository, userRepository, cryptography, passwordPolicy, passwordEventPublisher);
   }
 
   // --- requestPasswordReset ---
@@ -173,11 +178,13 @@ class PasswordRecoveryServiceImplTest {
 
   @Test
   void resetPassword_shortPassword_throwsInvalidRequest() {
+    when(passwordPolicy.accept("short"))
+        .thenThrow(new InvalidRequestException("Password must be at least 15 characters"));
     InvalidRequestException ex =
         assertThrows(
             InvalidRequestException.class, () -> service.resetPassword("any-token", "short"));
 
-    assertEquals("Password must be at least 8 characters", ex.getMessage());
+    assertEquals("Password must be at least 15 characters", ex.getMessage());
     verify(tokenRepository, never()).findByTokenHash(anyString());
   }
 

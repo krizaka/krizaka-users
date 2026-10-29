@@ -1,7 +1,9 @@
 package com.krizaka.users.service.infrastructure.ratelimit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import com.krizaka.users.domain.ports.inbound.LoginLockoutService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -10,7 +12,9 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 class AuthRateLimitWiringTest {
 
   private final ApplicationContextRunner runner =
-      new ApplicationContextRunner().withUserConfiguration(AuthRateLimitConfig.class);
+      new ApplicationContextRunner()
+          .withUserConfiguration(AuthRateLimitConfig.class)
+          .withBean(LoginLockoutService.class, () -> mock(LoginLockoutService.class));
 
   @Test
   void theContextStartsWithTheDefaultsAlone() {

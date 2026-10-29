@@ -49,6 +49,8 @@
         <krizaka.security.opentelemetry.version>1.62.0</krizaka.security.opentelemetry.version>
         <krizaka.security.tomcat.version>11.0.25</krizaka.security.tomcat.version>
         <archunit.version>1.5.1</archunit.version>
+        <!-- Argon2id (spring-security-crypto) runs on BouncyCastle's implementation; the 1.84 line is already in the build's BOM chain. -->
+        <bouncycastle.version>1.84</bouncycastle.version>
         <!-- 0.2.0 deliberately breaks 0.1.0 (the outbox events gained their AMQP headers:
              PendingOutboxEvent's constructor changed) — a minor before 1.0, as release-please's
              bump-minor-pre-major allows. japicmp (krizaka-parent, release profile) reports it
