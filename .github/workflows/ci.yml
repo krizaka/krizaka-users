@@ -21,9 +21,14 @@ concurrency:
 
 jobs:
   maven:
-    uses: krizaka/.github/.github/workflows/maven.yml@2f783fc6b27a4992dab040a4970c8b8fa27185ea # main
+    uses: krizaka/.github/.github/workflows/maven.yml@944b6e5283428852f463b108b7ec9cd2647345fe # main
     with:
       upstreams: "krizaka-build krizaka-platform-kit"
       rewrite: true
       sonar: true   # CI analysis with JaCoCo coverage; the merge queue branch is analysed too
-    secrets: inherit
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+      MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+      MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_KEY }}
+      MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
