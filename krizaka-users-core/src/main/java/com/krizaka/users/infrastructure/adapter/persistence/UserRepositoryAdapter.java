@@ -94,6 +94,11 @@ class UserRepositoryAdapter implements UserRepositoryPort {
   }
 
   @Override
+  public void rehashPasswordByEmail(String email, String passwordHash) {
+    provider.rehashPasswordByEmail(email, passwordHash);
+  }
+
+  @Override
   public Optional<User> findByEmail(String email) {
     return provider.findByEmail(email).map(UserMapper::toDomain);
   }

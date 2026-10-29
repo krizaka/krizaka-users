@@ -110,6 +110,13 @@ class UserPersistenceProviderImpl implements UserPersistenceProvider {
   }
 
   @Override
+  public void rehashPasswordByEmail(String email, String passwordHash) {
+    Objects.requireNonNull(email, EMAIL_CANNOT_BE_NULL);
+    Objects.requireNonNull(passwordHash, "Password hash cannot be null");
+    userRepository.rehashPasswordByEmail(email, passwordHash);
+  }
+
+  @Override
   @Transactional(readOnly = true)
   public Optional<UserDto> findByEmail(String email) {
     Objects.requireNonNull(email, EMAIL_CANNOT_BE_NULL);
