@@ -9,7 +9,7 @@
 ## Rules of this repository
 
 - **Depends on Krizaka artifacts only** — `krizaka-build`, `krizaka-platform-kit`. Never on a product
-  (`com.orazaka..`, `com.orochia..`): `UsersDependsOnNoProduct` fails the build.
+  (`com.orazaka..`): `UsersDependsOnNoProduct` fails the build.
 - **Other services depend on the contract or the client** (`krizaka-users-api`, `krizaka-users-client`), never on
   `krizaka-users-core` or `-persistence`.
 - **Hexagonal layout**: `domain` is framework-free; ports in `domain/ports`; adapters package-private in
