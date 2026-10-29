@@ -82,10 +82,16 @@ class PwnedPasswordsAdapter implements BreachedPasswordPort {
         && !"0".equals(line.substring(colon + 1).trim());
   }
 
+  /**
+   * SHA-1 is the identifier the Pwned Passwords range API defines (k-anonymity): it names a
+   * password in a public breach corpus and protects nothing; only its first five hex characters
+   * leave the process. It is not used to store or verify a credential (that is Argon2id).
+   */
   private static String sha1(String password) {
     try {
       byte[] digest =
-          MessageDigest.getInstance("SHA-1").digest(password.getBytes(StandardCharsets.UTF_8));
+          MessageDigest.getInstance("SHA-1") // NOSONAR java:S4790 protocol-mandated, see above
+              .digest(password.getBytes(StandardCharsets.UTF_8));
       return HexFormat.of().withUpperCase().formatHex(digest).toUpperCase(Locale.ROOT);
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("SHA-1 unavailable", e);
