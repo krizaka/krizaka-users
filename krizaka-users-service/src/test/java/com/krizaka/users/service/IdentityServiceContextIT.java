@@ -41,7 +41,10 @@ import org.springframework.test.context.DynamicPropertySource;
       "krizaka.messaging.consumer.enabled=false",
       "krizaka.users.crypto.key=test-crypto-key-0123456789abcdef!",
       "krizaka.users.crypto.salt=0123456789abcdef",
-      "management.tracing.enabled=false"
+      "management.tracing.enabled=false",
+      "krizaka.users.vault.key=BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
+      "spring.security.oauth2.client.registration.github.client-id=gh-test-id",
+      "spring.security.oauth2.client.registration.github.client-secret=gh-clear-secret-0123"
     })
 class IdentityServiceContextIT extends AbstractContainerIntegrationTest {
 
@@ -191,5 +194,39 @@ class IdentityServiceContextIT extends AbstractContainerIntegrationTest {
             "admin.account_exported",
             "admin.account_deleted");
     assertThat(spare).isNotNull();
+  }
+
+  @Test
+  void theIdentitySecretsAreSealedInTheDatabaseAndTheAdminSeesSetOrNotSet() throws Exception {
+    UUID boss = account("vault-boss", true);
+    UUID person = account("vault-person", false);
+
+    String dump =
+        String.join(
+            "|", jdbc.queryForList("SELECT t::text FROM social_connection t", String.class));
+    assertThat(dump).contains("gh-test-id", "v2.k1.").doesNotContain("gh-clear-secret-0123");
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM admin_audit WHERE action = 'identity.social_connection_imported'"
+                    + " AND target_id = 'github'",
+                Integer.class))
+        .isEqualTo(1);
+
+    assertThat(call("GET", "/api/v1/admin/social-connections", null, null).statusCode())
+        .isEqualTo(401);
+    assertThat(
+            call(
+                    "GET",
+                    "/api/v1/admin/social-connections",
+                    token(person, "vault-person", false),
+                    null)
+                .statusCode())
+        .isEqualTo(403);
+    var list =
+        call("GET", "/api/v1/admin/social-connections", token(boss, "vault-boss", true), null);
+    assertThat(list.statusCode()).isEqualTo(200);
+    assertThat(list.body())
+        .contains("\"secretSet\":true", "github")
+        .doesNotContain("gh-clear-secret-0123", "v2.k1.", "sealed");
   }
 }
