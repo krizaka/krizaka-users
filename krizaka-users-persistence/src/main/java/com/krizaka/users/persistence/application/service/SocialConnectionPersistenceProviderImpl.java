@@ -9,11 +9,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Package-private implementation of {@link SocialConnectionPersistenceProvider} (native SQL). */
-@Service
+@Component
 @Transactional
 class SocialConnectionPersistenceProviderImpl implements SocialConnectionPersistenceProvider {
 
