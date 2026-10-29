@@ -164,7 +164,21 @@ New passwords are hashed with **Argon2id** (`{argon2}`, 19 MiB, 2 passes), NFKC-
 factor exists), 256 at most, no composition rule, and refused when they appear in a known breach (Pwned Passwords range API with
 padding: only five hex characters of the SHA-1 leave; unreachable = accepted and logged). The BCrypt hashes already stored (no
 prefix) and the products' scrypt hashes still verify, and are rehashed to Argon2id after a successful sign-in without invalidating
-sessions. Not in this slice: the durable lockout (state still in memory).
+sessions. A right password is looked up in the breach corpus again at every sign-in (a password can be breached after it was
+chosen): a hit leaves an `identity.password_breached_at_signin` audit line (user id, never the password), the sign-in is not blocked
+and an unreachable service is ignored (logged).
+
+**Lockout of failed sign-ins** is durable (`login_lockout`, Flyway V6): one counter per account from one address and one per account
+from anywhere, keyed by a SHA-256 of the lower-cased account (and address), so the table holds no mailbox and a changed case buys
+nothing. Past the threshold every further failure doubles the lock up to a ceiling; a locked account refuses even the right
+password; a success clears the address counter only. It survives a restart and is shared by every instance. The thresholds
+(`threshold` 5, `accountThreshold` 25, `baseDelaySeconds` 60, `maxDelaySeconds` 900, `forgetAfterSeconds` 1800, ceiling 24 h) are the
+single row of `lockout_settings`, read and replaced by an administrator at `GET|PUT /api/v1/admin/lockout-policy`, each change audited
+(`identity.lockout_policy_changed`, old and new figures). The old `krizaka.users-service.rate-limit.lockout.*` properties are gone.
+If the store is unreachable the check is skipped and logged; the per-address budget still applies.
+
+**The GitHub verifier** reads its client secret from the vault at each call (the environment value is only the fallback while no
+vault key is set), so a rotation by an administrator needs no restart.
 
 ### The vault (ADR-016 slice 1)
 

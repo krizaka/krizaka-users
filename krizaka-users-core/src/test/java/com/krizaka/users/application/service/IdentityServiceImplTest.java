@@ -138,6 +138,20 @@ class IdentityServiceImplTest {
   }
 
   @Test
+  void authenticate_recheckBreachAtSignIn_neverBlocksTheSignIn() {
+    User user = stubUser();
+    when(userRepository.findSecurityInfoByEmail(EMAIL))
+        .thenReturn(Optional.of(new UserSecurityInfo(user, HASHED_PASSWORD)));
+    when(cryptography.matchesPassword(TEST_PASSWORD, HASHED_PASSWORD)).thenReturn(true);
+    when(passwordPolicy.recheckAtSignIn(user.id().toString(), TEST_PASSWORD))
+        .thenThrow(new IllegalStateException("breach service down"));
+
+    assertEquals(user, service.authenticate(EMAIL, TEST_PASSWORD));
+
+    verify(passwordPolicy).recheckAtSignIn(user.id().toString(), TEST_PASSWORD);
+  }
+
+  @Test
   void authenticate_currentHash_isLeftAlone() {
     when(userRepository.findSecurityInfoByEmail(EMAIL))
         .thenReturn(Optional.of(new UserSecurityInfo(stubUser(), HASHED_PASSWORD)));

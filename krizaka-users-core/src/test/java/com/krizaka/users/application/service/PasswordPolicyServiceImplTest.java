@@ -2,8 +2,13 @@ package com.krizaka.users.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.krizaka.users.domain.exception.InvalidRequestException;
+import com.krizaka.users.domain.ports.outbound.AdminUserRepositoryPort;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -12,7 +17,8 @@ import org.junit.jupiter.api.Test;
  */
 class PasswordPolicyServiceImplTest {
 
-  private final PasswordPolicyServiceImpl open = new PasswordPolicyServiceImpl(p -> false);
+  private final PasswordPolicyServiceImpl open =
+      new PasswordPolicyServiceImpl(p -> false, mock(AdminUserRepositoryPort.class));
 
   @Test
   void fifteenCharactersAreEnoughAndFourteenAreNot() {
@@ -55,10 +61,38 @@ class PasswordPolicyServiceImplTest {
 
   @Test
   void aBreachedPasswordIsRefused() {
-    var breached = new PasswordPolicyServiceImpl("correct horse battery"::equals);
+    var breached =
+        new PasswordPolicyServiceImpl(
+            "correct horse battery"::equals, mock(AdminUserRepositoryPort.class));
     assertThatThrownBy(() -> breached.accept("correct horse battery"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageContaining("breach");
     assertThat(breached.accept("correct horse battery staple")).isNotBlank();
+  }
+
+  @Test
+  void aBreachedPasswordIsSpottedAtSignInAndAuditedWithoutItsValue() {
+    var audit = mock(AdminUserRepositoryPort.class);
+    var service = new PasswordPolicyServiceImpl("short old password"::equals, audit);
+
+    assertThat(service.recheckAtSignIn("u-1", "short old password")).isTrue();
+
+    verify(audit)
+        .appendAudit(
+            org.mockito.ArgumentMatchers.eq("u-1"),
+            org.mockito.ArgumentMatchers.eq("system"),
+            org.mockito.ArgumentMatchers.eq("identity.password_breached_at_signin"),
+            org.mockito.ArgumentMatchers.eq("u-1"),
+            org.mockito.ArgumentMatchers.argThat(d -> !d.contains("short old password")));
+  }
+
+  @Test
+  void aCleanPasswordAtSignInLeavesNoTraceAndIsNotHeldToTheLengthRule() {
+    var audit = mock(AdminUserRepositoryPort.class);
+    var service = new PasswordPolicyServiceImpl(p -> false, audit);
+
+    assertThat(service.recheckAtSignIn("u-1", "old")).isFalse();
+
+    verify(audit, never()).appendAudit(any(), any(), any(), any(), any());
   }
 }
