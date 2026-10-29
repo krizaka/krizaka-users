@@ -63,8 +63,13 @@ class IdentityServiceImplTest {
     return Persona.freeUser();
   }
 
+  @Mock private com.krizaka.users.domain.ports.inbound.PasswordPolicyService passwordPolicy;
+
   @BeforeEach
   void setUp() {
+    org.mockito.Mockito.lenient()
+        .when(passwordPolicy.accept(org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(inv -> inv.getArgument(0));
     org.mockito.Mockito.lenient()
         .when(properties.preferences())
         .thenReturn(new IdentityInfrastructureProperties.Preferences(java.util.List.of()));
@@ -79,6 +84,7 @@ class IdentityServiceImplTest {
             userInterceptionRepository,
             userCredentialRepository,
             cryptography,
+            passwordPolicy,
             properties,
             userEventPublisher,
             transactionManager);
@@ -115,6 +121,32 @@ class IdentityServiceImplTest {
     User result = service.authenticate(EMAIL, TEST_PASSWORD);
 
     assertEquals(user, result);
+  }
+
+  @Test
+  void authenticate_weakLegacyHash_isRehashedWithoutInvalidatingSessions() {
+    when(userRepository.findSecurityInfoByEmail(EMAIL))
+        .thenReturn(Optional.of(new UserSecurityInfo(stubUser(), HASHED_PASSWORD)));
+    when(cryptography.matchesPassword(TEST_PASSWORD, HASHED_PASSWORD)).thenReturn(true);
+    when(cryptography.needsRehash(HASHED_PASSWORD)).thenReturn(true);
+    when(cryptography.encodePassword(TEST_PASSWORD)).thenReturn("{argon2}new");
+
+    service.authenticate(EMAIL, TEST_PASSWORD);
+
+    verify(userRepository).rehashPasswordByEmail(EMAIL, "{argon2}new");
+    verify(userRepository, never()).updatePasswordHashByEmail(any(), any());
+  }
+
+  @Test
+  void authenticate_currentHash_isLeftAlone() {
+    when(userRepository.findSecurityInfoByEmail(EMAIL))
+        .thenReturn(Optional.of(new UserSecurityInfo(stubUser(), HASHED_PASSWORD)));
+    when(cryptography.matchesPassword(TEST_PASSWORD, HASHED_PASSWORD)).thenReturn(true);
+    when(cryptography.needsRehash(HASHED_PASSWORD)).thenReturn(false);
+
+    service.authenticate(EMAIL, TEST_PASSWORD);
+
+    verify(userRepository, never()).rehashPasswordByEmail(any(), any());
   }
 
   @Test
