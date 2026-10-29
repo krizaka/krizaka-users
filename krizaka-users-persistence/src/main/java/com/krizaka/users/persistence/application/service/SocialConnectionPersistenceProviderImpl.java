@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,12 +26,17 @@ class SocialConnectionPersistenceProviderImpl implements SocialConnectionPersist
 
   private static SocialConnectionRow toRow(Object[] r) {
     return new SocialConnectionRow(
-        (String) r[0],
-        (String) r[1],
-        (String) r[2],
-        (String) r[3],
-        (String) r[4],
-        ((Timestamp) r[5]).toInstant());
+        (String) r[0], (String) r[1], (String) r[2], (String) r[3], (String) r[4], instant(r[5]));
+  }
+
+  /** Hibernate returns an Instant, a Timestamp or an OffsetDateTime, depending on the version. */
+  private static Instant instant(Object value) {
+    return switch (value) {
+      case Instant i -> i;
+      case Timestamp t -> t.toInstant();
+      case OffsetDateTime o -> o.toInstant();
+      default -> throw new IllegalStateException("unexpected updated_at type " + value.getClass());
+    };
   }
 
   @Override
