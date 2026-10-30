@@ -1,2 +1,4 @@
 # Fixtures found by the org secret scan in history: documentation examples and test values (reviewed 2026-10-29), not credentials.
 95276351fb59a54b32bfc9e5492a1b6123996aa2:krizaka-users-service/src/test/java/com/krizaka/users/service/IdentityServiceContextIT.java:generic-api-key:47
+# Same test fixture (client-id gh-test-id, client-secret a fake test value) in the commit that introduced it; reviewed 2026-10-29, not a credential.
+6b56cf72eca625256ac3cfa743f9c7344b8a6d98:krizaka-users-service/src/test/java/com/krizaka/users/service/IdentityServiceContextIT.java:generic-api-key:47
