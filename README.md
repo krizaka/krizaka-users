@@ -210,6 +210,10 @@ table itself refuses a value that is not an envelope. The admin API (`GET /api/v
 It inherits [`krizaka-parent`](https://github.com/krizaka/krizaka-build) and uses
 [`krizaka-platform-kit`](https://github.com/krizaka/krizaka-platform-kit): build those first, or let CI do it. JDK 21.
 
+## Design notes
+
+- [ADR-001 — Krizaka accounts](docs/adr/ADR-001-accounts.md): the thin community layer (comments, saved posts, reply e-mails) planned over this block for accounts.krizaka.com; moved here from the former `krizaka-accounts` repository.
+
 ## Contributing
 
 Issues and pull requests are welcome — see the organisation's
