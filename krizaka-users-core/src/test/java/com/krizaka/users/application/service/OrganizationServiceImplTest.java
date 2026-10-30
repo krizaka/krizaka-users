@@ -278,7 +278,7 @@ class OrganizationServiceImplTest {
     OrganizationActor operator = new OrganizationActor("op", true);
     when(organizations.findMember(ORG, "op")).thenReturn(Optional.empty());
     when(organizations.findMembers(ORG)).thenReturn(List.of());
-    when(users.findById("svc")).thenReturn(Optional.of(user("svc", "svc_yasakia", true)));
+    when(users.findById("svc")).thenReturn(Optional.of(user("svc", "svc_akinaza", true)));
     when(organizations.saveMember(any())).thenAnswer(i -> i.getArgument(0));
 
     assertThat(service.members(operator, ORG)).isEmpty();

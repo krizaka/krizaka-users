@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,17 +33,17 @@ class GithubProviderVerifier extends AbstractProviderVerifier {
 
   private final RestClient restClient;
   private final String clientId;
-  private final String basicAuth;
+  private final Supplier<String> clientSecret;
 
   GithubProviderVerifier(RestClient restClient, String clientId, String clientSecret) {
+    this(restClient, clientId, () -> clientSecret);
+  }
+
+  /** The secret is asked at each call: the vault is the source, a rotation needs no restart. */
+  GithubProviderVerifier(RestClient restClient, String clientId, Supplier<String> clientSecret) {
     this.restClient = restClient;
     this.clientId = Objects.requireNonNull(clientId, "GitHub client id");
-    this.basicAuth =
-        "Basic "
-            + Base64.getEncoder()
-                .encodeToString(
-                    (clientId + ":" + Objects.requireNonNull(clientSecret, "GitHub client secret"))
-                        .getBytes(StandardCharsets.UTF_8));
+    this.clientSecret = Objects.requireNonNull(clientSecret, "GitHub client secret");
     logger.info("GitHub OAuth2 provider verifier initialized");
   }
 
@@ -85,13 +86,20 @@ class GithubProviderVerifier extends AbstractProviderVerifier {
     return new ExtractedProfile(email, id, displayName, avatarUrl);
   }
 
+  private String basicAuth() {
+    String secret = Objects.requireNonNull(clientSecret.get(), "GitHub client secret");
+    return "Basic "
+        + Base64.getEncoder()
+            .encodeToString((clientId + ":" + secret).getBytes(StandardCharsets.UTF_8));
+  }
+
   private JsonNode checkTokenBelongsToUs(String accessToken) {
     try {
       JsonNode body =
           restClient
               .post()
               .uri(GITHUB_API + "/applications/{clientId}/token", clientId)
-              .header(HttpHeaders.AUTHORIZATION, basicAuth)
+              .header(HttpHeaders.AUTHORIZATION, basicAuth())
               .accept(GITHUB_JSON)
               .contentType(MediaType.APPLICATION_JSON)
               .body(Map.of("access_token", accessToken))

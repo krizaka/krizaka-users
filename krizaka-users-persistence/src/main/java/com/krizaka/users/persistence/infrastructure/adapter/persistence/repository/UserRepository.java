@@ -75,6 +75,14 @@ public interface UserRepository extends JpaRepository<UserEntity, String> {
   int updatePasswordHashByEmail(@Param("email") String email, @Param("hash") String hash);
 
   /**
+   * Replaces the hash by a stronger one of the same password (rehash at sign-in): {@code
+   * password_changed_at} is left alone, so no session is invalidated.
+   */
+  @Modifying
+  @Query("UPDATE UserEntity u SET u.passwordHash = :hash WHERE u.email = :email")
+  int rehashPasswordByEmail(@Param("email") String email, @Param("hash") String hash);
+
+  /**
    * Resolves any user by email, regardless of enabled status.
    *
    * @param email The user's email address.

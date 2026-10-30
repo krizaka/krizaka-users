@@ -144,6 +144,8 @@ A consumer keeps its own copy of the event and checks it against the schema with
 | `krizaka.users.jwt.issuer` | `IDENTITY_JWT_ISSUER` | `krizaka-users` |
 | `krizaka.users.jwt.ttl` | `IDENTITY_JWT_TTL` | `PT12H` |
 | `krizaka.users.crypto.key` / `.salt` | `CRYPTO_KEY` / `CRYPTO_SALT` | — (provider-key encryption) |
+| `krizaka.users.vault.key` / `.key-id` | `AUTH_VAULT_KEY` / `AUTH_VAULT_KEY_ID` | — (32 bytes, base64) / `k1` — the key that seals the identity secrets (see « The vault ») |
+| `krizaka.users.password.breach-check` | `AUTH_PASSWORD_BREACH_CHECK` | `true` — a new password is checked against Pwned Passwords (range API, padded; fail-open) |
 | `krizaka.users.email-verification.enabled` | `EMAIL_VERIFICATION_ENABLED` | `true` |
 | `krizaka.users.registration.enabled` | `AUTH_SIGNUP_ENABLED` | `true` — `false` closes account creation (register → 403, first sign-in of an unknown Google/GitHub identity → 403); existing accounts keep signing in |
 | `krizaka.users-service.datasource.url` | `IDENTITY_DB_URL` | `jdbc:postgresql://localhost:5432/krizaka_users_db` |
@@ -155,6 +157,44 @@ and the schema come from [`infra/initdb/10-identity.sql`](infra/initdb/10-identi
 Later schema changes are Flyway migrations (`krizaka-users-persistence/src/main/resources/db/migration`, `V<n>__<what>.sql`,
 idempotent) applied by the service itself at startup, as its own role; the database is baselined at version 1. Never apply
 SQL by hand.
+
+### Passwords (ADR-016 slice 2)
+
+New passwords are hashed with **Argon2id** (`{argon2}`, 19 MiB, 2 passes), NFKC-normalised, **15 characters minimum** (8 once a second
+factor exists), 256 at most, no composition rule, and refused when they appear in a known breach (Pwned Passwords range API with
+padding: only five hex characters of the SHA-1 leave; unreachable = accepted and logged). The BCrypt hashes already stored (no
+prefix) and the products' scrypt hashes still verify, and are rehashed to Argon2id after a successful sign-in without invalidating
+sessions. A right password is looked up in the breach corpus again at every sign-in (a password can be breached after it was
+chosen): a hit leaves an `identity.password_breached_at_signin` audit line (user id, never the password), the sign-in is not blocked
+and an unreachable service is ignored (logged).
+
+**Lockout of failed sign-ins** is durable (`login_lockout`, Flyway V6): one counter per account from one address and one per account
+from anywhere, keyed by a SHA-256 of the lower-cased account (and address), so the table holds no mailbox and a changed case buys
+nothing. Past the threshold every further failure doubles the lock up to a ceiling; a locked account refuses even the right
+password; a success clears the address counter only. It survives a restart and is shared by every instance. The thresholds
+(`threshold` 5, `accountThreshold` 25, `baseDelaySeconds` 60, `maxDelaySeconds` 900, `forgetAfterSeconds` 1800, ceiling 24 h) are the
+single row of `lockout_settings`, read and replaced by an administrator at `GET|PUT /api/v1/admin/lockout-policy`, each change audited
+(`identity.lockout_policy_changed`, old and new figures). The old `krizaka.users-service.rate-limit.lockout.*` properties are gone.
+If the store is unreachable the check is skipped and logged; the per-address budget still applies.
+
+**The GitHub verifier** reads its client secret from the vault at each call (the environment value is only the fallback while no
+vault key is set), so a rotation by an administrator needs no restart.
+
+### The vault (ADR-016 slice 1)
+
+Identity secrets (today the OAuth client secrets of Google and GitHub) are stored in `social_connection` as an envelope,
+`v2.<key_id>.<wrapped data key>.<sealed secret>` (AES-256-GCM, a fresh data key per value wrapped by `AUTH_VAULT_KEY`):
+the format of `@krizaka/storage`'s vault, with a cross-language test vector. A database dump reads no secret, and the
+table itself refuses a value that is not an envelope. The admin API (`GET /api/v1/admin/social-connections`) answers
+*secret set* or *not set*, never a value; secrets are opened in one place (`SocialConnectionService.clientSecret`) and never logged.
+
+- **First start:** the OAuth clients of the environment are imported once as sealed connections (`source: env`), each with
+  an `identity.social_connection_imported` line in the audit trail. Without `AUTH_VAULT_KEY` nothing is imported (a warning, no secret in it).
+- **Rotating the key:** set the new `AUTH_VAULT_KEY` with a new `AUTH_VAULT_KEY_ID`, and keep the old one as
+  `KRIZAKA_USERS_VAULT_RETIRED_<OLD_ID>`. The next start (or `POST /api/v1/admin/social-connections/rewrap`) re-wraps every
+  data key under the new key (`identity.social_connection_rewrapped`): no secret is retyped. Then drop the retired key.
+- **Losing the key:** the sealed secrets are unreadable. Keep `AUTH_VAULT_KEY` in the secret manager with a backup outside the
+  deployment; if it is lost, set the OAuth clients again from the providers' consoles.
 
 > **Messaging.** Events are published to the events exchange of the platform the service runs on:
 > `krizaka.messaging.exchanges.events` (`EVENTS_EXCHANGE`, default `krizaka.events`) and

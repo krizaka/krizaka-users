@@ -54,6 +54,29 @@ class GithubProviderVerifierTest {
   }
 
   @Test
+  void theSecretIsReadFromTheVaultAtEachCallSoARotationNeedsNoRestart() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer rotating = MockRestServiceServer.bindTo(builder).build();
+    String[] current = {"first-secret"};
+    var live = new GithubProviderVerifier(builder.build(), CLIENT_ID, () -> current[0]);
+    current[0] = "rotated-secret";
+    String expected =
+        "Basic "
+            + Base64.getEncoder()
+                .encodeToString((CLIENT_ID + ":rotated-secret").getBytes(StandardCharsets.UTF_8));
+    rotating
+        .expect(requestTo(CHECK))
+        .andExpect(header("Authorization", expected))
+        .andRespond(
+            withSuccess(
+                "{\"id\":1,\"user\":{\"id\":7,\"login\":\"o\",\"email\":\"o@x.io\"}}",
+                MediaType.APPLICATION_JSON));
+
+    assertThat(live.verifyAndExtract("gho_token").providerId()).isEqualTo("7");
+    rotating.verify();
+  }
+
+  @Test
   void supportsGithubOnly() {
     assertThat(verifier.supports("github")).isTrue();
     assertThat(verifier.supports("GITHUB")).isTrue();

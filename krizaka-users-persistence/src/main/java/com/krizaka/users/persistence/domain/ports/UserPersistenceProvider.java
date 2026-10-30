@@ -31,6 +31,9 @@ public interface UserPersistenceProvider {
    */
   void updatePasswordHashByEmail(String email, String passwordHash);
 
+  /** Stores a stronger hash of the same password; {@code password_changed_at} is not touched. */
+  void rehashPasswordByEmail(String email, String passwordHash);
+
   /**
    * Resolves any user by email, regardless of enabled status.
    *

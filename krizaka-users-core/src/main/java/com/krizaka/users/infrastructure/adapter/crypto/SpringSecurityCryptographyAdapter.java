@@ -1,22 +1,23 @@
 package com.krizaka.users.infrastructure.adapter.crypto;
 
+import com.krizaka.users.domain.ports.inbound.PasswordPolicyService;
 import com.krizaka.users.domain.ports.outbound.CryptographyPort;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
  * Concrete outbound infrastructure adapter implementing {@link CryptographyPort}. Wraps {@link
- * BCryptPasswordEncoder} and standard SHA-256 digesting.
+ * PasswordEncoder} and standard SHA-256 digesting.
  */
 @Component
 class SpringSecurityCryptographyAdapter implements CryptographyPort {
 
-  private final BCryptPasswordEncoder passwordEncoder;
+  private final PasswordEncoder passwordEncoder;
 
-  SpringSecurityCryptographyAdapter(BCryptPasswordEncoder passwordEncoder) {
+  SpringSecurityCryptographyAdapter(PasswordEncoder passwordEncoder) {
     this.passwordEncoder = passwordEncoder;
   }
 
@@ -46,6 +47,23 @@ class SpringSecurityCryptographyAdapter implements CryptographyPort {
 
   @Override
   public boolean matchesPassword(String rawPassword, String encodedPassword) {
-    return passwordEncoder.matches(rawPassword, encodedPassword);
+    // Passwords are hashed in NFKC; a hash made from the raw form before that rule still matches.
+    String normalised = PasswordPolicyService.normalise(rawPassword);
+    return matchesSafely(normalised, encodedPassword)
+        || (!normalised.equals(rawPassword) && matchesSafely(rawPassword, encodedPassword));
+  }
+
+  private boolean matchesSafely(String password, String encodedPassword) {
+    try {
+      return passwordEncoder.matches(password, encodedPassword);
+    } catch (IllegalArgumentException e) {
+      // e.g. BCrypt refuses a password over 72 bytes: it cannot be the one that was hashed
+      return false;
+    }
+  }
+
+  @Override
+  public boolean needsRehash(String encodedPassword) {
+    return passwordEncoder.upgradeEncoding(encodedPassword);
   }
 }
