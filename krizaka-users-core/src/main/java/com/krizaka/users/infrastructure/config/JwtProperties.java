@@ -13,8 +13,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * <p>With {@code signing} set (ADR-001), session tokens are ES256, signed by this issuer only; the
  * verifiers fetch the public keys from {@code /.well-known/jwks.json} and hold no signing material.
  * Without it the legacy HS256 shared secret signs them (deprecated). The {@code secret} still
- * verifies legacy HS256 tokens only until {@code hs256Cutoff}; {@code SERVICE} tokens
- * are ES256, per caller (slice 3).
+ * verifies legacy HS256 tokens only until {@code hs256Cutoff}; {@code SERVICE} tokens are ES256,
+ * per caller (slice 3).
  *
  * @param secret the HMAC-SHA256 secret (≥ 32 bytes)
  * @param issuer the {@code iss} claim — verifiers' {@code krizaka.security.jwt.issuer}

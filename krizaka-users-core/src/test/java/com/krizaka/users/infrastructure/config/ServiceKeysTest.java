@@ -50,10 +50,14 @@ class ServiceKeysTest {
       KeyPair issuer, Map<String, String> callers, String secret, Instant cutoff) {
     var signing =
         new JwtProperties.Signing(
-            "-----BEGIN " + PRIVATE + "-----\n"
+            "-----BEGIN "
+                + PRIVATE
+                + "-----\n"
                 + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8))
                     .encodeToString(issuer.getPrivate().getEncoded())
-                + "\n-----END " + PRIVATE + "-----",
+                + "\n-----END "
+                + PRIVATE
+                + "-----",
             publicPem(issuer),
             "issuer-1",
             Map.of());
