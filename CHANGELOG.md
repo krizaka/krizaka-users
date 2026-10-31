@@ -4,6 +4,17 @@ All notable changes to this repository are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 Every Krizaka JVM artifact is released at the same version.
 
+## [0.2.1](https://github.com/krizaka/krizaka-users/compare/v0.2.0...v0.2.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* **build:** the modules of this repository are managed at project.version ahead of the BOM ([#105](https://github.com/krizaka/krizaka-users/issues/105)) ([5726cc2](https://github.com/krizaka/krizaka-users/commit/5726cc2684c52c3131395e15a97e8109e5ea4120))
+* **ci:** maven.yml pin 6bfc6ea4, so the tag deploy writes packages (0.2.0 got 403) ([#98](https://github.com/krizaka/krizaka-users/issues/98)) ([34b370e](https://github.com/krizaka/krizaka-users/commit/34b370e3a219b7f4c1dfdbda95ad33634bc53e63))
+* **ci:** the first published version is 0.2.1 (v0.2.0 is a dead tag, its deploy got 403) ([#100](https://github.com/krizaka/krizaka-users/issues/100)) ([f5f7fed](https://github.com/krizaka/krizaka-users/commit/f5f7fed2bea3af36c63256a1aca9ad719bfdceb2))
+* **ci:** the release-as pin on 0.2.0 goes (v0.2.0 is a dead tag; the next release is 0.2.1) ([#102](https://github.com/krizaka/krizaka-users/issues/102)) ([011e698](https://github.com/krizaka/krizaka-users/commit/011e6986df79fcf31254deb088a7315856a13246))
+* **deps:** krizaka-parent and BOM 0.3.3 (platform kit 0.4.3 on GitHub Packages); no upstream checkout ([#104](https://github.com/krizaka/krizaka-users/issues/104)) ([922dd57](https://github.com/krizaka/krizaka-users/commit/922dd578adc6fd5e6eadcc2e09a90a1ead192ad2))
+
 ## [0.2.0](https://github.com/krizaka/krizaka-users/compare/v0.1.0...v0.2.0) (2026-10-31)
 
 
