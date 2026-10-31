@@ -4,6 +4,58 @@ All notable changes to this repository are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 Every Krizaka JVM artifact is released at the same version.
 
+## [0.2.0](https://github.com/krizaka/krizaka-users/compare/v0.1.0...v0.2.0) (2026-10-31)
+
+
+### Features
+
+* **accounts:** organizations that own accounts (orazaka[#372](https://github.com/krizaka/krizaka-users/issues/372)) ([#54](https://github.com/krizaka/krizaka-users/issues/54)) ([4927d8b](https://github.com/krizaka/krizaka-users/commit/4927d8b92c96a75b1d1b5e089f03c2b226654d30))
+* **admin:** account administration — list, suspend, restore, administrator role, Law 25 export and erasure, audit trail; a context-load test of the service as deployed ([#23](https://github.com/krizaka/krizaka-users/issues/23)) ([05be3ad](https://github.com/krizaka/krizaka-users/commit/05be3ade9aff6823d1e67978f522f9d377e436a5))
+* **api-keys:** scoped keys — a key can carry area:action scopes, answered at the token exchange for the edge to enforce ([#16](https://github.com/krizaka/krizaka-users/issues/16)) ([f0c4ab3](https://github.com/krizaka/krizaka-users/commit/f0c4ab39f7fc2094791ee9d7c14c1eb4e4d11f22))
+* **audit:** refused and failed actions are audited with their outcome (ADR-085) ([#46](https://github.com/krizaka/krizaka-users/issues/46)) ([f93281a](https://github.com/krizaka/krizaka-users/commit/f93281ab9c1ae4bd4df94f0a088f830144f57f45))
+* **audit:** the administration's audit keeps the request id (ADR-085, identity hop) ([#45](https://github.com/krizaka/krizaka-users/issues/45)) ([c45b286](https://github.com/krizaka/krizaka-users/commit/c45b28650b53e0aaba702b018f97e61be9877cf0))
+* **auth:** durable lockout, breach recheck at sign-in, GitHub verifier on the vault (ADR-016 slice 2) ([#79](https://github.com/krizaka/krizaka-users/issues/79)) ([9b0fd68](https://github.com/krizaka/krizaka-users/commit/9b0fd68eb39d75014472cba86d4fd996f08d9ad0))
+* **client:** krizaka.users.client.* in the generated metadata, described, with its default, and the reference java.krizaka.com renders ([#44](https://github.com/krizaka/krizaka-users/issues/44)) ([7bd4b61](https://github.com/krizaka/krizaka-users/commit/7bd4b61c47c96e3fd13fd4e6adcccaa17e103deb))
+* **db:** schema changes are Flyway migrations that run on deploy (orazaka[#372](https://github.com/krizaka/krizaka-users/issues/372)) ([#62](https://github.com/krizaka/krizaka-users/issues/62)) ([b6c6ddb](https://github.com/krizaka/krizaka-users/commit/b6c6ddbefa86a45077a95bb95967fbfe15813c01))
+* **events:** JSON Schema of evt.user.registered and evt.password.reset, checked against the published events ([#7](https://github.com/krizaka/krizaka-users/issues/7)) ([0a94d6d](https://github.com/krizaka/krizaka-users/commit/0a94d6d3aba70d54d4a9e0383c0f55e773ecdc1d))
+* **identity:** the key exchange carries the owner's tier and requests per minute ([#34](https://github.com/krizaka/krizaka-users/issues/34)) ([9013512](https://github.com/krizaka/krizaka-users/commit/9013512e48c6d02e85da24cd002693d5d471ac28))
+* **identity:** vault — identity secrets sealed under AUTH_VAULT_KEY (ADR-016 slice 1) ([#73](https://github.com/krizaka/krizaka-users/issues/73)) ([92a8bd4](https://github.com/krizaka/krizaka-users/commit/92a8bd42f81fcacb3e3d381c771b024e7dedef84))
+* **jwt:** ES256 sessions + JWKS endpoint (platform-kit[#11](https://github.com/krizaka/krizaka-users/issues/11) slice 2) ([#60](https://github.com/krizaka/krizaka-users/issues/60)) ([ed42e5f](https://github.com/krizaka/krizaka-users/commit/ed42e5f68c3c2b615d125b691fba07feb81c573c))
+* **outbox:** implement OutboxStore.append — event rows keep their messageId and envelope headers ([#2](https://github.com/krizaka/krizaka-users/issues/2)) ([500ff55](https://github.com/krizaka/krizaka-users/commit/500ff554c4d1905f0a2dd73659a0fddd348a46bb))
+* **rate-limit:** seed the service tier on a fresh database (orazaka[#234](https://github.com/krizaka/krizaka-users/issues/234)) ([#38](https://github.com/krizaka/krizaka-users/issues/38)) ([3e4f604](https://github.com/krizaka/krizaka-users/commit/3e4f60463f730bb5780d9cf969ba0ef117472150))
+* **users:** registration can be closed — AUTH_SIGNUP_ENABLED=false refuses every account creation (403) ([#15](https://github.com/krizaka/krizaka-users/issues/15)) ([9288efe](https://github.com/krizaka/krizaka-users/commit/9288efee6074a89a9989ed039072f3289d6c9f23))
+
+
+### Bug Fixes
+
+* **auth:** rate limiting and progressive lockout on login, oauth, register, forgot, reset, verify ([#17](https://github.com/krizaka/krizaka-users/issues/17)) ([#18](https://github.com/krizaka/krizaka-users/issues/18)) ([8ccbd29](https://github.com/krizaka/krizaka-users/commit/8ccbd293abe70e3a53f868cc2947f2f8a13aae46))
+* **auth:** the rate-limit properties bean was silently dropped, so the service did not start ([#17](https://github.com/krizaka/krizaka-users/issues/17)) ([#20](https://github.com/krizaka/krizaka-users/issues/20)) ([50023f8](https://github.com/krizaka/krizaka-users/commit/50023f8cd242b71a220554f0038a171928ab0f38))
+* **build:** client processor paths append to the parent's (NullAway plug-in not found) ([#77](https://github.com/krizaka/krizaka-users/issues/77)) ([3ecb4fc](https://github.com/krizaka/krizaka-users/commit/3ecb4fc8399d6351033d63c8d6d3366cd6fb3a11))
+* **build:** users-client annotationProcessorPaths append to the parent's (NullAway profile, krizaka-build[#121](https://github.com/krizaka/krizaka-users/issues/121)) ([#76](https://github.com/krizaka/krizaka-users/issues/76)) ([ad8d353](https://github.com/krizaka/krizaka-users/commit/ad8d353ddeec38d65b5488b9b1865622a8528d0e))
+* **deps:** security overrides of the Boot BOM (jackson 3.1.7/2.21.7, amqp-client 5.37.0, opentelemetry 1.62.0, tomcat 11.0.25) ([#27](https://github.com/krizaka/krizaka-users/issues/27)) ([dc37a4a](https://github.com/krizaka/krizaka-users/commit/dc37a4a4bf068a18ae34670101dd8ce4cb537043))
+* **deps:** Spring Boot 4.0.8 in the root pom (parent 0.2.0 from Central still manages 4.0.7: netty, postgresql, webmvc alerts) ([#33](https://github.com/krizaka/krizaka-users/issues/33)) ([6c83b7a](https://github.com/krizaka/krizaka-users/commit/6c83b7a8364a68ca2e9e813750afdb55ae31ec42))
+* **rate-limit:** seed the service tier in rate_limit_tiers too (the users foreign key) ([#40](https://github.com/krizaka/krizaka-users/issues/40)) ([d7afee0](https://github.com/krizaka/krizaka-users/commit/d7afee017b2645f8cbfbca52947f75079667837b))
+* **security:** CryptoConverter as a Spring bean, no statics or getenv ([#28](https://github.com/krizaka/krizaka-users/issues/28)) ([#57](https://github.com/krizaka/krizaka-users/issues/57)) ([d27ae57](https://github.com/krizaka/krizaka-users/commit/d27ae57159f10884cbe0ed3b6fd91fc517ed7c3e))
+* **security:** federated sign-in — Google aud and email_verified required, GitHub tokens bound to our app, blank client id = provider off, provider identity stored, unique usernames ([#32](https://github.com/krizaka/krizaka-users/issues/32)) ([2d636ac](https://github.com/krizaka/krizaka-users/commit/2d636ac4c5fba51a13c7069e242d9054d189fdfc))
+* **security:** the scan's last test-fixture fingerprint is reviewed ([#95](https://github.com/krizaka/krizaka-users/issues/95)) ([82c22e4](https://github.com/krizaka/krizaka-users/commit/82c22e4d97aac2d3f03c018a5e73f2f99af3bcae))
+* **test:** structure tests apply only the rules whose subject the module has (no vacuous rule, GOV-006); stores re-recorded ([#25](https://github.com/krizaka/krizaka-users/issues/25)) ([3274748](https://github.com/krizaka/krizaka-users/commit/3274748d3e7dc2513af40853ec3549f21e7efeba))
+
+
+### Performance Improvements
+
+* **oauth2:** verify Google ID tokens locally against the cached JWKS ([#42](https://github.com/krizaka/krizaka-users/issues/42)) ([#43](https://github.com/krizaka/krizaka-users/issues/43)) ([0d077d6](https://github.com/krizaka/krizaka-users/commit/0d077d69ee1d57d03d569d0b58025708112df41a))
+
+
+### Documentation
+
+* **adr:** keep the Krizaka accounts design here, krizaka-accounts is deleted (krizaka-internal[#752](https://github.com/krizaka/krizaka-users/issues/752)) ([#93](https://github.com/krizaka/krizaka-users/issues/93)) ([89e6909](https://github.com/krizaka/krizaka-users/commit/89e6909cc3bf81637345efbfc4fea85251c0b256))
+* **agents:** no test, not done — every feature and fix ships with its tests ([#13](https://github.com/krizaka/krizaka-users/issues/13)) ([f283dea](https://github.com/krizaka/krizaka-users/commit/f283deaa6beaa804a6029311f56cc6e82efbbc32))
+* **layout:** point AGENTS.md to the repository layout standard ([#56](https://github.com/krizaka/krizaka-users/issues/56)) ([4e474bb](https://github.com/krizaka/krizaka-users/commit/4e474bbf18c67f2ffda7dc41e09f526e01030cac))
+* **readme:** Krizaka footer and dead tour image removed ([#19](https://github.com/krizaka/krizaka-users/issues/19)) ([0bf9de7](https://github.com/krizaka/krizaka-users/commit/0bf9de75c744c6b8336ba4e45811d5ed6b35c761))
+* **readme:** SonarCloud badges ([#53](https://github.com/krizaka/krizaka-users/issues/53)) ([780ca6f](https://github.com/krizaka/krizaka-users/commit/780ca6f0fe3bd71a5d5ae4020e15c2848accc6e5))
+* **readme:** the new Krizaka mark, light and dark, from the organisation profile ([#10](https://github.com/krizaka/krizaka-users/issues/10)) ([dfd0fe8](https://github.com/krizaka/krizaka-users/commit/dfd0fe8029a0214b364f65f389d3ffb6a507f5ad))
+* standard README header with the animated Orazaka mark ([0ac46f9](https://github.com/krizaka/krizaka-users/commit/0ac46f9ccbb555971a573ced050b2e2111d7464e))
+
 ## [Unreleased]
 
 ### Changed
