@@ -4,6 +4,13 @@ All notable changes to this repository are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 Every Krizaka JVM artifact is released at the same version.
 
+## [0.3.0](https://github.com/krizaka/krizaka-users/compare/v0.2.1...v0.3.0) (2026-10-31)
+
+
+### Features
+
+* **security:** per-caller ES256 service keys, HS256 behind a dated cutover ([#106](https://github.com/krizaka/krizaka-users/issues/106)) ([339aaf5](https://github.com/krizaka/krizaka-users/commit/339aaf506f35c15f0e07be6361fc8f878c4ec839))
+
 ## [0.2.1](https://github.com/krizaka/krizaka-users/compare/v0.2.0...v0.2.1) (2026-10-31)
 
 
