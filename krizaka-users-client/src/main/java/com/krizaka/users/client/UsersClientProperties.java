@@ -2,6 +2,7 @@ package com.krizaka.users.client;
 
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
@@ -35,6 +36,7 @@ public record UsersClientProperties(
   }
 
   /** Refuses an incomplete client: a call that cannot authenticate fails at startup, not later. */
+  @ConstructorBinding
   public UsersClientProperties {
     if (baseUrl == null || baseUrl.isBlank()) {
       throw new IllegalArgumentException("krizaka.users.client.base-url is required");
