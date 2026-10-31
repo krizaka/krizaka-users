@@ -16,7 +16,7 @@
     <artifactId>krizaka-users</artifactId>
     <!-- The repository's own version, released by release-please: declared here, not inherited, so that a
          release moves krizaka-users and never the krizaka-parent it is built on (krizaka-build.version below). -->
-    <version>0.2.1</version>
+    <version>0.3.0</version>
     <packaging>pom</packaging>
     <name>Krizaka Users</name>
     <description>Reusable user management for any Krizaka application: registration, e-mail verification, login (password + Google/GitHub OAuth), forgot/reset password, profile &amp; preferences, API keys, RBAC and JWT issuance.</description>
