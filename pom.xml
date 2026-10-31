@@ -123,6 +123,27 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- This repository's own modules at this build's version, ahead of the BOM (which names the last release, so a release PR resolved its siblings from the registry). -->
+            <dependency>
+                <groupId>com.krizaka</groupId>
+                <artifactId>krizaka-users-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.krizaka</groupId>
+                <artifactId>krizaka-users-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.krizaka</groupId>
+                <artifactId>krizaka-users-persistence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.krizaka</groupId>
+                <artifactId>krizaka-users-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- The other Krizaka artifacts (the BOM of the Krizaka build release this repository is built on). -->
             <dependency>
                 <groupId>com.krizaka</groupId>
