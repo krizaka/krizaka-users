@@ -13,7 +13,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param serviceKey This caller's own P-256 private key (PKCS#8 PEM, from its environment, never
  *     committed): the SERVICE token of every call is signed ES256 with it (ADR-001), and the users
  *     service holds only the public half. Preferred.
- * @param serviceKeyId The {@code kid} of serviceKey. Required with it.
+ * @param serviceKeyId The kid of serviceKey. Required with it.
  * @param serviceSecret Legacy shared HS256 secret, accepted only until the users service's dated
  *     cutover. Exactly one of serviceKey and serviceSecret is required.
  * @param serviceName Who is calling: the subject of the SERVICE token, visible in the users

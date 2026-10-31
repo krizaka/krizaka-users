@@ -18,7 +18,7 @@
     }, {
       "name" : "krizaka.users.client.service-key-id",
       "type" : "java.lang.String",
-      "description" : "The kid of service-key. Required with it."
+      "description" : "The kid of serviceKey. Required with it."
     }, {
       "name" : "krizaka.users.client.service-name",
       "type" : "java.lang.String",
