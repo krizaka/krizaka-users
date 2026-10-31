@@ -3,8 +3,6 @@ package com.krizaka.users.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jwt.SignedJWT;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.spec.ECGenParameterSpec;
@@ -35,11 +33,12 @@ class ServiceKeyClientTest {
         new UsersClientProperties(
             "http://u", generatedPrivatePem(), "billing-1", null, "billing", Duration.ZERO);
 
-    SignedJWT jwt = SignedJWT.parse(HttpUserDirectoryClient.tokensOf(props).token());
+    String[] parts = HttpUserDirectoryClient.tokensOf(props).token().split("\\.");
+    String header = new String(Base64.getUrlDecoder().decode(parts[0]), StandardCharsets.UTF_8);
+    String claims = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
 
-    assertThat(jwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.ES256);
-    assertThat(jwt.getHeader().getKeyID()).isEqualTo("billing-1");
-    assertThat(jwt.getJWTClaimsSet().getSubject()).isEqualTo("billing");
+    assertThat(header).contains("\"alg\":\"ES256\"").contains("\"kid\":\"billing-1\"");
+    assertThat(claims).contains("\"sub\":\"billing\"");
   }
 
   @Test
