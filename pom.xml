@@ -12,7 +12,7 @@
     <parent>
         <groupId>com.krizaka</groupId>
         <artifactId>krizaka-parent</artifactId>
-        <version>0.3.1</version>
+        <version>0.3.3</version>
         <relativePath/>
     </parent>
 
@@ -40,7 +40,7 @@
     </issueManagement>
 
     <properties>
-        <krizaka-build.version>0.3.1</krizaka-build.version>
+        <krizaka-build.version>0.3.3</krizaka-build.version>
         <!-- Security overrides of the Spring Boot BOM (Dependabot alerts): the patched releases of the libraries whose
              Boot-managed version is vulnerable. Drop each one when krizaka-parent / Spring Boot manages a fixed version. -->
         <krizaka.security.jackson3.version>3.2.4</krizaka.security.jackson3.version>
