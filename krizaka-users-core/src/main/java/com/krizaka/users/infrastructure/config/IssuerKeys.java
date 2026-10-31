@@ -119,7 +119,8 @@ public final class IssuerKeys {
     }
   }
 
-  private static ECPublicKey publicKey(String pem) throws Exception {
+  /** Parses an SPKI PEM P-256 public key (caller keys, retired keys). */
+  static ECPublicKey publicKey(String pem) throws Exception {
     return (ECPublicKey)
         KeyFactory.getInstance("EC").generatePublic(new X509EncodedKeySpec(der(pem)));
   }

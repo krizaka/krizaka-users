@@ -50,8 +50,7 @@ final class HttpUserDirectoryClient implements UserDirectoryClient {
 
   HttpUserDirectoryClient(RestClient.Builder restClientBuilder, UsersClientProperties properties) {
     Objects.requireNonNull(properties, "UsersClientProperties cannot be null");
-    ServiceTokenProvider tokens =
-        new ServiceTokenProvider(properties.serviceSecret(), properties.serviceName());
+    ServiceTokenProvider tokens = tokensOf(properties);
     this.usersClient =
         restClientBuilder
             .baseUrl(properties.baseUrl())
@@ -60,6 +59,26 @@ final class HttpUserDirectoryClient implements UserDirectoryClient {
             .requestInitializer(request -> request.getHeaders().setBearerAuth(tokens.token()))
             .build();
     this.cacheTtlMillis = properties.cacheTtl().toMillis();
+  }
+
+  /** Own ES256 key when configured (ADR-001); the legacy shared secret otherwise. */
+  static ServiceTokenProvider tokensOf(UsersClientProperties properties) {
+    if (properties.serviceKey() == null || properties.serviceKey().isBlank()) {
+      return new ServiceTokenProvider(properties.serviceSecret(), properties.serviceName());
+    }
+    try {
+      var der =
+          java.util.Base64.getMimeDecoder()
+              .decode(properties.serviceKey().replaceAll("-----[A-Z ]+-----", "").strip());
+      var key =
+          (java.security.interfaces.ECPrivateKey)
+              java.security.KeyFactory.getInstance("EC")
+                  .generatePrivate(new java.security.spec.PKCS8EncodedKeySpec(der));
+      return ServiceTokenProvider.es256(key, properties.serviceKeyId(), properties.serviceName());
+    } catch (java.security.GeneralSecurityException | IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "krizaka.users.client.service-key is not a valid P-256 PKCS#8 PEM");
+    }
   }
 
   @Override

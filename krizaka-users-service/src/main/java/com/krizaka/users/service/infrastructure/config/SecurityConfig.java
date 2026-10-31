@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +36,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableConfigurationProperties(InternalProperties.class)
 public class SecurityConfig {
 
   private static final String ADMIN = "ROLE_ADMIN";
@@ -43,11 +45,14 @@ public class SecurityConfig {
   private final IdentityService identityService;
   private final ApiKeyService apiKeyService;
   private final JwtDecoder identityJwtDecoder;
+  private final InternalProperties internal;
 
   public SecurityConfig(
+      InternalProperties internal,
       IdentityService identityService,
       ApiKeyService apiKeyService,
       @Qualifier("identityJwtDecoder") JwtDecoder identityJwtDecoder) {
+    this.internal = internal;
     this.identityService = identityService;
     this.apiKeyService = apiKeyService;
     this.identityJwtDecoder = identityJwtDecoder;
@@ -133,6 +138,7 @@ public class SecurityConfig {
 
     SecurityBaseline.apply(
             http,
+            internal.allowedCallers(),
             authz ->
                 authz
                     .requestMatchers(

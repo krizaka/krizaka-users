@@ -102,7 +102,9 @@ krizaka:
   users:
     client:
       base-url: http://users:8083
-      service-secret: ${IDENTITY_JWT_SECRET}   # the shared HS256 secret
+      service-key: ${AUTH_SERVICE_KEY}         # this caller's own P-256 private key (PEM); users holds the public half
+      service-key-id: billing-1               # its kid
+      # service-secret: ...                   # legacy shared HS256 secret; refused after the users service's hs256-cutoff
       service-name: billing-service           # who is calling (the token's subject)
       cache-ttl: PT60S
 ```
