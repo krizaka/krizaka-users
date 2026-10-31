@@ -4,6 +4,13 @@ All notable changes to this repository are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 Every Krizaka JVM artifact is released at the same version.
 
+## [0.2.0](https://github.com/krizaka/krizaka-users/compare/v0.2.0...v0.2.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **ci:** maven.yml pin 6bfc6ea4, so the tag deploy writes packages (0.2.0 got 403) ([#98](https://github.com/krizaka/krizaka-users/issues/98)) ([34b370e](https://github.com/krizaka/krizaka-users/commit/34b370e3a219b7f4c1dfdbda95ad33634bc53e63))
+
 ## [0.2.0](https://github.com/krizaka/krizaka-users/compare/v0.1.0...v0.2.0) (2026-10-31)
 
 
