@@ -64,8 +64,9 @@ public record UsersClientProperties(
    */
   @Override
   public String toString() {
-    return "UsersClientProperties[baseUrl=%s, serviceName=%s, cacheTtl=%s, serviceKey=<redacted>,"
-            + " serviceSecret=<redacted>]"
-        .formatted(baseUrl, serviceName, cacheTtl);
+    String shape =
+        "UsersClientProperties[baseUrl=%s, serviceName=%s, cacheTtl=%s, "
+            + "serviceKey=<redacted>, serviceSecret=<redacted>]";
+    return shape.formatted(baseUrl, serviceName, cacheTtl);
   }
 }

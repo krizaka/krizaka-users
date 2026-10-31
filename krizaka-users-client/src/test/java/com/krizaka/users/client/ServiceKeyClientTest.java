@@ -19,10 +19,14 @@ class ServiceKeyClientTest {
     var generator = KeyPairGenerator.getInstance("EC");
     generator.initialize(new ECGenParameterSpec("secp256r1"));
     String type = "PRIVATE KEY";
-    return "-----BEGIN " + type + "-----\n"
+    return "-----BEGIN "
+        + type
+        + "-----\n"
         + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8))
             .encodeToString(generator.generateKeyPair().getPrivate().getEncoded())
-        + "\n-----END " + type + "-----";
+        + "\n-----END "
+        + type
+        + "-----";
   }
 
   @Test
