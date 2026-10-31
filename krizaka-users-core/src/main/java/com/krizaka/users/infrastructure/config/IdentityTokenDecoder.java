@@ -2,6 +2,7 @@ package com.krizaka.users.infrastructure.config;
 
 import com.krizaka.security.token.ServiceTokenVerifier;
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -70,25 +71,30 @@ final class IdentityTokenDecoder implements JwtDecoder {
 
   @Override
   public Jwt decode(String token) {
+    JWSHeader header;
     try {
-      var header = JWTParser.parse(token).getHeader();
-      var alg = header.getAlgorithm();
-      if (JWSAlgorithm.ES256.equals(alg)) {
-        String kid = ((com.nimbusds.jose.JWSHeader) header).getKeyID();
-        if (kid != null && keys.byKeyId(kid).isPresent()) {
-          return session.decode(token);
-        }
-        return requireServiceRole(service.decode(token));
-      }
-      if (JWSAlgorithm.HS256.equals(alg)
-          && legacy != null
-          && properties.hs256Accepted(clock.instant())) {
-        return legacy.decode(token);
-      }
-      throw new BadJwtException("Unsupported token algorithm");
-    } catch (ParseException e) {
+      header = (JWSHeader) JWTParser.parse(token).getHeader();
+    } catch (ParseException | ClassCastException e) {
       throw new BadJwtException("Malformed token");
     }
+    if (JWSAlgorithm.ES256.equals(header.getAlgorithm())) {
+      return decodeEs256(token, header.getKeyID());
+    }
+    if (JWSAlgorithm.HS256.equals(header.getAlgorithm()) && hs256Open()) {
+      return legacy.decode(token);
+    }
+    throw new BadJwtException("Unsupported token algorithm");
+  }
+
+  private boolean hs256Open() {
+    return legacy != null && properties.hs256Accepted(clock.instant());
+  }
+
+  private Jwt decodeEs256(String token, String kid) {
+    if (kid != null && keys.byKeyId(kid).isPresent()) {
+      return session.decode(token);
+    }
+    return requireServiceRole(service.decode(token));
   }
 
   private static Jwt requireServiceRole(Jwt jwt) {
