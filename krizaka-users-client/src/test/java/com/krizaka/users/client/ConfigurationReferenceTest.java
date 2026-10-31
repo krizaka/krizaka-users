@@ -32,6 +32,8 @@ class ConfigurationReferenceTest {
   static final Set<String> WITHOUT_DEFAULT =
       Set.of(
           "krizaka.users.client.base-url",
+          "krizaka.users.client.service-key",
+          "krizaka.users.client.service-key-id",
           "krizaka.users.client.service-secret",
           "krizaka.users.client.service-name");
 
