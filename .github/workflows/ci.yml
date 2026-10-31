@@ -21,9 +21,13 @@ concurrency:
 
 jobs:
   maven:
+    permissions:
+      contents: read
+      packages: write
     uses: krizaka/.github/.github/workflows/maven.yml@99281c3f4b46dbe4c645dff053b4bfb387a1403d # main
     with:
-      upstreams: "krizaka-build krizaka-platform-kit"
+      registry: github   # GitHub Packages (ADR-019): krizaka-parent, the BOM and the platform kit resolve from there, no upstream checkout
+      upstreams: "krizaka-platform-kit"   # krizaka-security 0.4.1 is tagged but not on GitHub Packages yet: built from main and installed; drop this line once the kit's next release is published there
       rewrite: true
       sonar: true   # CI analysis with JaCoCo coverage; the merge queue branch is analysed too
     secrets:
